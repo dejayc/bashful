@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# bash-script-lib is copyright 2009-2011 Dejay Clayton, all rights reserved:
+# Bashful is copyright 2009-2015 Dejay Clayton, all rights reserved:
+#     https://github.com/dejayc/bashful
+# Bashful is licensed under the 2-Clause BSD License:
+#     http://opensource.org/licenses/BSD-2-Clause
+#
+# Excerpts copied from bash-script-lib, copyright 2009-2011 Dejay Clayton:
 #     http://sourceforge.net/projects/bash-script-lib/
 # bash-script-lib is licensed under the Apache License Version 2.0:
 #     http://www.apache.org/licenses/LICENSE-2.0
