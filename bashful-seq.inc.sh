@@ -147,3 +147,259 @@ function intSeq()
     translatedList \
         ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} -s "${SEP}" "${RESULTS[@]}"
 }
+
+# function permutedSet:
+#
+# Returns a separated list of permuted items.  Each argument passed into the
+# function will be split by the input delimiter and turned into a set of
+# items.  The set resulting from each argument will be permuted with every
+# other set.
+#
+# By default, null items and null permutations are discarded.
+#
+# -d optionally specifies one or more input delimiter characters.  Defaults to
+#    $IFS.  An error is returned if null.
+#
+# -i optionally specifies an output separator for each set item.  Defaults to
+#    ' '.
+#
+# -n optionally preserves null values within permutations.  By default, null
+#    values are discarded.
+#
+# -N optionally preserves null separators that appear between null values
+#    and any adjacent null or non-null value.  By default, separators
+#    adjacent to null values are discarded.
+#
+# -p optionally preserves null values within permutations, and preserves
+#    entirely null permutations within the output.  By default, null values
+#    are discarded.
+#
+# -q optionally quotes each item being output, in a way that protects spaces,
+#    quotes, and other special characters from being misinterpreted by the
+#    shell.  Useful for assigning the output of this function to an array,
+#    via the following construct:
+#
+#    declare -a ARRAY="( `permutedSet -q "${INPUT_ARRAY[@]}"` )"
+#
+#    Note that while this option can be used simultaneously with an output
+#    separator specified via -s, such usage is not guaranteed to be parsable,
+#    depending upon the value of the separator.
+#
+# -s optionally specifies an output separator for each permutation.  Defaults
+#    to ' '.
+#
+# -S optionally appends an output separator at the end of the output.  By
+#    default, no output separator appears at the end of the output.
+#
+# -u optionally generates only unique permutations, discarding duplicates from
+#    the output.
+#
+# Examples:
+#
+# $ permutedSet '1 2' 'a b'
+# 1 a 1 b 2 a 2 b
+#
+# $ permutedSet -d ',' '1,2' 'a,b'
+# 1 a 1 b 2 a 2 b
+#
+# $ permutedSet -i ':' -s ',' '1 2' 'a b'
+# 1:a,1:b,2:a,2:b
+#
+# $ permutedSet -i ':' -s ',' -S '1 2' 'a b'
+# 1:a,1:b,2:a,2:b,
+#
+# $ permutedSet -d ',' -s ',' '1,,2' 'a,,b'
+# 1 a,1 b,2 a,2 b
+#
+# $ permutedSet -d ',' -s ',' -n '1,,2' 'a,,b'
+# 1 a,1,1 b,a,b,2 a,2,2 b
+#
+# $ permutedSet -d ',' -s ',' -p '1,,2' 'a,,b'
+# 1 a,1,1 b,a,,b,2 a,2,2 b
+#
+# $ permutedSet -d ',' -s ',' -N -p '1,,2' 'a,,b'
+# 1 a,1 ,1 b, a, , b,2 a,2 ,2 b
+#
+# $ permutedSet -d ',' -s ',' -n 'a big' 'bad,,' 'wolf'
+# a big bad wolf,a big wolf
+#
+# $ permutedSet -d ',' -n -q 'a big' 'bad,,' 'wolf'
+# a\ big\ bad\ wolf a\ big\ wolf
+#
+# $ permutedSet -d ',' -s ',' -n -q 'a big' 'bad,,' 'wolf'
+# a\ big\ bad\ wolf,a\ big\ wolf
+#
+# $ permutedSet -d ',' -i '' -s ',' -u '1,,2,,1' 'a,,b,,a'
+# 1a,1b,2a,2b
+#
+# $ permutedSet -d ',' -i '' -s ',' -u -n '1,,2,,1' 'a,,b,,a'
+# 1a,1,1b,a,b,2a,2,2b
+#
+# $ permutedSet -d ',' -i '' -s ',' -u -p '1,,2,,1' 'a,,b,,a'
+# 1a,1,1b,a,,b,2a,2,2b
+function permutedSet()
+{
+    local DELIM=' '
+    local ITEM_SEP=' '
+    local PERM_SEP=' '
+    local NULL_PERM=''
+    declare -i IS_UNIQUE=0
+    declare -i PRESERVE_NULL_ITEMS=0
+    declare -i PRESERVE_NULL_PERMS=0
+    declare -i PRESERVE_NULL_SEPS=0
+    local FLAG_PRESERVE_NULL_ITEMS=''
+    local FLAG_PRESERVE_NULL_PERMS=''
+    local FLAG_QUOTED=''
+    local FLAG_TRAILING_SEP=''
+    local FLAG_UNIQUE=''
+
+    # Parse function options.
+    declare -i OPTIND
+    local OPT=''
+
+    while getopts ':d:i:nNpqs:Su' OPT
+    do
+        case "${OPT}" in
+        d)
+            DELIM="${OPTARG}"
+            [[ -n "${DELIM}" ]] || return 1
+            ;;
+        i)
+            ITEM_SEP="${OPTARG}"
+            ;;
+        n)
+            let PRESERVE_NULL_ITEMS=1
+            ;;
+        N)
+            let PRESERVE_NULL_ITEMS=1
+            let PRESERVE_NULL_SEPS=1
+            ;;
+        p)
+            let PRESERVE_NULL_ITEMS=1
+            let PRESERVE_NULL_PERMS=1
+            FLAG_PRESERVE_NULL_PERMS='-n'
+            ;;
+        q)
+            FLAG_QUOTED="-${OPT}"
+            ;;
+        s)
+            PERM_SEP="${OPTARG}"
+            ;;
+        S)
+            FLAG_TRAILING_SEP="-${OPT}"
+            ;;
+        u)
+            let IS_UNIQUE=1
+            FLAG_UNIQUE="-${OPT}"
+            ;;
+        *)
+            return 2
+        esac
+    done
+    shift $(( OPTIND - 1 ))
+    # Done parsing function options.
+
+    [[ ${PRESERVE_NULL_ITEMS} -eq 0 ]] || FLAG_PRESERVE_NULL_ITEMS='-n'
+
+    declare -a RESULTS=()
+
+    # Parse all incoming parameters into sets, processing them according to
+    # the optional flags specified.
+    while [ $# -gt 0 ]
+    do
+        local ARG="${1}"
+        shift
+
+        unset SET
+        declare -a SET=( '' )
+        declare -i SET_LEN=1
+
+        [[ -n "${ARG}" ]] && {
+
+            ARG="$( splitList -d "${DELIM}" "${ARG}" )" || return
+            declare -a SET="( ${ARG} )"
+            let SET_LEN=${#SET[@]}
+
+            [[ ${SET_LEN} -gt 0 || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
+        }
+
+        let RESULTS_LEN=${#RESULTS[@]}
+
+        # If the previous results set is empty, no previous set has been found
+        # to permute.  Thus, assign the current set to the results set, and
+        # skip to processing the next set.
+        [[ ${RESULTS_LEN} -gt 0 ]] || {
+
+            RESULTS=( "${SET[@]}" )
+            continue
+        }
+
+        # If preserving separators for null items, update the value that
+        # represents what a completely null permutation would look like, for
+        # future comparison.
+        [[ ${PRESERVE_NULL_SEPS} -eq 0 ]] || {
+
+            NULL_PERM="${NULL_PERM}${ITEM_SEP}"
+        }
+
+        declare -a NEXT_RESULTS=()
+        declare -i I=0
+
+        while [ ${I} -lt ${RESULTS_LEN} ]
+        do
+            local RESULT="${RESULTS[I]}"
+            let I++
+
+            [[ -n "${RESULT}" || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
+
+            declare -i J=0
+
+            while [ ${J} -lt ${SET_LEN} ]
+            do
+                local ITEM="${SET[J]}"
+                let J++
+
+                [[ -n "${ITEM}" || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
+
+                local PERM
+
+                if [ ${PRESERVE_NULL_SEPS} -ne 0 ]
+                then
+                    PERM="${RESULT}${ITEM_SEP}${ITEM}"
+                else
+                    if [ -n "${RESULT}" ]
+                    then
+                        if [ -n "${ITEM}" ]
+                        then
+                            PERM="${RESULT}${ITEM_SEP}${ITEM}"
+                        else
+                            PERM="${RESULT}"
+                        fi
+                    else
+                        PERM="${ITEM}"
+                    fi
+                fi
+
+                NEXT_RESULTS[${#NEXT_RESULTS[@]}]="${PERM}"
+            done
+        done
+        RESULTS=( "${NEXT_RESULTS[@]}" )
+    done
+
+    # Remove completely null permutations, unless they are to be preserved.
+    [[ ${PRESERVE_NULL_PERMS} -ne 0 ]] || {
+
+        let RESULTS_LEN=${#RESULTS[@]}
+        declare -i I=0
+
+        while [ ${I} -lt ${RESULTS_LEN} ]
+        do
+            [[ "${RESULTS[I]}" != "${NULL_PERM}" ]] || unset RESULTS[I]
+            let I++
+        done
+    }
+
+    translatedList \
+        ${FLAG_QUOTED} ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_PERMS} \
+        ${FLAG_TRAILING_SEP} -s "${PERM_SEP}" "${RESULTS[@]}"
+}
