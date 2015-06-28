@@ -148,6 +148,283 @@ function intSeq()
         ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} -s "${SEP}" "${RESULTS[@]}"
 }
 
+# function permutedSeq:
+#
+# Returns a separated list of strings representing permutations of static text
+# mingled with non-negative integer sequences or static text sequences.  The
+# function reads each argument passed to it, and parses them by looking for
+# embedded sequences within them.
+#
+# -d optionally specifies one or more text delimeter characters to separate
+#    values within a text sequence.  Defaults to ','.  An error is returned if
+#    null, or if it contains any character also contained by the starting or
+#    ending delimiters.
+#
+# -m optionally specifies one or more characters to serve as delimiters that
+#    mark the start of a sequence.  Defaults to '['.  An error is returned if
+#    null, or if it contains '-' or any character also contained by the ending
+#    or text delimiters.
+#
+# -M optionally specifies one or more characters to serve as delimiters that
+#    mark the end of a sequence.  Defaults to ']'.  An error is returned if
+#    null, or if it contains '-' or any character also contained by the
+#    starting or text delimiters.
+#
+# -n optionally preserves null values within permutations.  By default, null
+#    values are discarded.
+#
+# -N optionally preserves null separators that appear between null values
+#    and any adjacent null or non-null value.  By default, separators
+#    adjacent to null values are discarded.
+#
+# -p optionally preserves null values within permutations, and preserves
+#    entirely null permutations within the output.  By default, null values
+#    are discarded.
+#
+# -q optionally quotes each item being output, in a way that protects spaces,
+#    quotes, and other special characters from being misinterpreted by the
+#    shell.  Useful for assigning the output of this function to an array,
+#    via the following construct:
+#
+#    declare -a ARRAY="( `permutedSeq -q "${INPUT_ARRAY[@]}"` )"
+#
+#    Note that while this option can be used simultaneously with an output
+#    separator specified via -s, such usage is not guaranteed to be parsable,
+#    depending upon the value of the separator.
+#
+# -s optionally specifies an output separator for each permutation.  Defaults
+#    to ' '.
+#
+# -u optionally generates only unique permutations, removing duplicates from
+#    the results.
+#
+# Sequences are delimited by the characters specified as the opening and
+# closing delimiters, which may not appear elsewhere within the text.
+#
+# Integer sequences are zero or more integers or integer ranges, separated by
+# commas.  An integer range is two integers separated by a dash '-'.
+#
+# To specify a text sequence that contains characters that would otherwise
+# be interpreted as integer sequences, specify a non-comma text delimiter:
+#
+# $ permutedSeq -d ';' -s "\n" 'School is open from [8-9;10-11] [am;pm]'
+# School is open from 8-9 am
+# School is open from 8-9 pm
+# School is open from 10-11 am
+# School is open from 10-11 pm
+#
+# Examples:
+#
+# $ permutedSeq -s "\n" 'Trains depart at [1,09-10][am,pm]'
+# Trains depart at 1am
+# Trains depart at 1pm
+# Trains depart at 09am
+# Trains depart at 09pm
+# Trains depart at 10am
+# Trains depart at 10pm
+#
+# $ permutedSeq -m '<' -M '>' '<1,2,1><8,9>'
+# 18 19 28 29 18 19
+#
+# $ permutedSeq -u -m '<' -M '>' '<1,2,1><8,9>'
+# 18 19 28 29
+#
+# $ permutedSeq -s ',' '[sub,,super][script,,sonic]'
+# subscript,subsonic,superscript,supersonic
+#
+# $ permutedSeq -s ',' -n '[sub,,super][script,,sonic]'
+# subscript,sub,subsonic,script,sonic,superscript,super,supersonic
+#
+# $ permutedSeq -s ',' -N '[sub,,super][script,,sonic]'
+# subscript,sub,subsonic,script,,sonic,superscript,super,supersonic
+#
+# $ permutedSeq -s ';' '[Hello,Goodbye], [world,you]' '[Regards,Thanks]'
+# Hello, world;Hello, you;Goodbye, world;Goodbye, you;Regards;Thanks
+#
+# $ permutedSeq -q '[Hi,Bye] [there,you]'
+# Hi\ there Hi\ you Bye\ there Bye\ you
+function permutedSeq()
+{
+    local OPEN_DELIM='['
+    local CLOSE_DELIM=']'
+    local TEXT_DELIM=','
+    local PERM_SEP=' '
+    declare -i PRESERVE_NULL_ITEMS=0
+    declare -i PRESERVE_NULL_PERMS=0
+    local FLAG_PRESERVE_NULL_ITEMS=''
+    local FLAG_PRESERVE_NULL_PERMS=''
+    local FLAG_PRESERVE_NULL_SEPS=''
+    local FLAG_QUOTED=''
+    local FLAG_UNIQUE=''
+
+    # Parse function options.
+    declare -i OPTIND
+    local OPT=''
+
+    while getopts ':d:m:M:nNpqs:u' OPT
+    do
+        case "${OPT}" in
+        d)
+            TEXT_DELIM="${OPTARG}"
+            [[ -n "${TEXT_DELIM}" ]] || return 1
+            ;;
+        m)
+            OPEN_DELIM="${OPTARG}"
+            [[ -n "${OPEN_DELIM}" ]] || return 1
+            ;;
+        M)
+            CLOSE_DELIM="${OPTARG}"
+            [[ -n "${CLOSE_DELIM}" ]] || return 1
+            ;;
+        n)
+            let PRESERVE_NULL_ITEMS=1
+            ;;
+        N)
+            let PRESERVE_NULL_ITEMS=1
+            let PRESERVE_NULL_PERMS=1
+            FLAG_PRESERVE_NULL_PERMS='-p'
+            ;;
+        p)
+            let PRESERVE_NULL_ITEMS=1
+            FLAG_PRESERVE_NULL_SEPS='-N'
+            ;;
+        q)
+            FLAG_QUOTED="-${OPT}"
+            ;;
+        s)
+            PERM_SEP="${OPTARG}"
+            ;;
+        u)
+            FLAG_UNIQUE="-${OPT}"
+            ;;
+        *)
+            return 2
+        esac
+    done
+    shift $(( OPTIND - 1 ))
+    # Done parsing function options.
+
+    # Verify that delimiters do not conflict with each other.
+    [[ "${TEXT_DELIM}" == "${TEXT_DELIM%%["${OPEN_DELIM}"]*}" && \
+       "${TEXT_DELIM}" == "${TEXT_DELIM%%["${CLOSE_DELIM}"]*}" && \
+       "${OPEN_DELIM}" == "${OPEN_DELIM%%["${CLOSE_DELIM}"]*}" ]] || return 1
+
+    # Verify that opening and closing delimiters do not contain '-'.
+    [[ "${OPEN_DELIM}" =~ - || "${CLOSE_DELIM}" =~ - ]] && return 1
+
+    [[ ${PRESERVE_NULL_ITEMS} -eq 0 ]] || {
+
+        FLAG_PRESERVE_NULL_ITEMS='-n'
+    }
+
+    local PERM_SPLIT="${OPEN_DELIM:0:1}"
+    local PERM_SETS=''
+
+    while [ $# -gt 0 ]
+    do
+        local REMAINING="${1}"
+        shift
+
+        local NONSEQUENCE=''
+        local SEQUENCE=''
+
+        unset PERM_SET
+        declare -a PERM_SET=()
+
+        while :
+        do
+            # Find the next leading segment of non-sequence text.
+            NONSEQUENCE="${REMAINING%%["${OPEN_DELIM}""${CLOSE_DELIM}"]*}"
+
+            # Advance the remaining text past the non-sequence text, to the
+            # start of the next sequence, if one exists.
+            REMAINING="${REMAINING:$(( ${#NONSEQUENCE} ))}"
+
+            # If the non-sequence text exists, save it to the set of permuters.
+            [[ -n "${NONSEQUENCE}" ]] && {
+
+                PERM_SET[${#PERM_SET[@]}]="${NONSEQUENCE}"
+            }
+
+            # Exit the loop if no text remains to be analyzed.
+            [[ -n "${REMAINING}" ]] || break;
+
+            # Define the current sequence as the text remaining to be analyzed,
+            # trimmed so that it doesn't contain any text past, or including,
+            # the next appearing closing delimiter.
+            SEQUENCE="${REMAINING%%["${CLOSE_DELIM}"]*}"
+
+            # Error: No closing delimiter.
+            [[ "${SEQUENCE}" != "${REMAINING}" ]] || return 1
+
+            declare -i SEQUENCE_LEN=${#SEQUENCE}
+
+            # Trim the opening delimeter from the current sequence.
+            SEQUENCE="${SEQUENCE#["${OPEN_DELIM}"]}"
+
+            # Error: No opening delimiter.
+            [[ ${#SEQUENCE} -ne ${SEQUENCE_LEN} ]] || return 1
+
+            # Advance the remaining text past the sequence text.
+            REMAINING="${REMAINING:$(( ${SEQUENCE_LEN} + 1 ))}"
+
+            # Skip empty sequences if necessary.
+            [[ "${SEQUENCE}" != '' || ${PRESERVE_NULL_PERMS} -ne 0 ]] \
+                || continue
+
+            unset SEQ_SET
+            declare -a SEQ_SET=()
+
+            # Check for text or integer sequence.
+            if [[ "${SEQUENCE}" =~ ^[-0-9,[:space:]]*$ ]]
+            then
+                SEQUENCE="$( splitList -d ',' "${SEQUENCE}" )" || return
+                declare -a SEQ_SET="( ${SEQUENCE} )"
+
+                # Parse set as an integer sequence, appending the delimiter so
+                # that any existing final trailing delimiter is retained.
+                SEQUENCE=\
+"$( intSeq ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]}" )" || return
+            else
+                SEQUENCE="$( splitList -d "${TEXT_DELIM}" "${SEQUENCE}" )" \
+                    || return
+                declare -a SEQ_SET="( ${SEQUENCE} )"
+
+                # Parse set as a text sequence, appending the delimiter so
+                # that any existing final trailing delimiter is retained.
+                SEQUENCE=\
+"$( translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]}" && echo _)" || return
+                SEQUENCE="${SEQUENCE%_}"
+            fi
+
+            # Add the results of the current sequence to the set of permuters.
+            PERM_SET[${#PERM_SET[@]}]="${SEQUENCE}"
+        done
+
+        local PERM_SET_LIST
+
+        # Generate a permuted set based on the set of permuters.
+        PERM_SET_LIST="$( permutedSet \
+            -q ${FLAG_UNIQUE} -d "${PERM_SPLIT}" -i '' -S \
+            ${FLAG_PRESERVE_NULL_ITEMS} ${FLAG_PRESERVE_NULL_PERMS} \
+            ${FLAG_PRESERVE_NULL_SEPS} "${PERM_SET[@]}" && echo _)" \
+            || return
+        PERM_SET_LIST="${PERM_SET_LIST%_}"
+
+        printf -v PERM_SETS '%s%s' "${PERM_SETS}" "${PERM_SET_LIST}"
+    done
+
+    [[ ${PRESERVE_NULL_PERMS} -ne 0 ]] && FLAG_PRESERVE_NULL_PERMS='-n'
+
+    declare -a SETS="( ${PERM_SETS} )"
+
+    translatedList \
+        ${FLAG_QUOTED} ${FLAG_PRESERVE_NULL_PERMS} ${FLAG_UNIQUE} \
+        -s "${PERM_SEP}" "${SETS[@]}"
+}
+
 # function permutedSet:
 #
 # Returns a separated list of permuted items.  Each argument passed into the
