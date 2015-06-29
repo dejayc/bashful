@@ -148,6 +148,304 @@ function intSeq()
         ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} -s "${SEP}" "${RESULTS[@]}"
 }
 
+# function nameValueSeq:
+#
+# Returns a separated list of name/value pairs, with each pair separated from
+# the next by the specified pair separator, and each name separated from its
+# value by the specified value separator.  Each argument passed into the
+# function will be interpreted as a name/value pair to be separated into a
+# name and value, according to the first occurrence of the specified value
+# delimiter.  The name and/or value, if they contain text or numeric sequences,
+# will be permuted into multiple resulting name/value pairs.
+#
+# -b optionally bypasses the permuting of any text or numeric sequences that
+#    may exist in the name/value pairs.
+#
+# -d optionally specifies one or more value delimiter characters.  The first
+#    occurrence of an input delimiter within a name/value pair will be used to
+#    split the name and value.  All subsequent occurrences will be considered
+#    part of the value.  Defaults to '='.  An error is returned if null.
+#
+# -q optionally quotes each item being output, in a way that protects spaces,
+#    quotes, and other special characters from being misinterpreted by the
+#    shell.  Useful for assigning the output of this function to an array,
+#    via the following construct:
+#
+#    declare -a ARRAY="( `nameValueSeq -q "${INPUT_ARRAY[@]}"` )"
+#
+#    Note that while this option can be used simultaneously with an output
+#    separator specified via -S, such usage is not guaranteed to be parsable,
+#    depending upon the value of the separator.
+#
+# -r optionally removes name/value pairs containing null values.  By default,
+#    such pairs are preserved.
+#
+# -R optionally removes name/value pairs containing null names.  By default,
+#    such pairs are preserved.
+#
+# -s optionally specifies a value separator for separating each name from
+#    value.  Defaults to '='.
+#
+# -S optionally specified a pair separator for separating each name/value
+#    pair from the next.  Defaults to ';'.
+#
+# -t optionally trims whitespace from values.
+#
+# -T optionally trims whitespace from names.
+#
+# -u optionally outputs only unique name/value pairs, discarding duplicates
+#    from the output.
+#
+# -v optionally treats arguments without an input delimiter as a value with a
+#    null name.  By default, such entries are treated as a name with a null
+#    value.
+#
+# Examples:
+#
+# $ nameValueSeq 'a=1' 'b=2' 'c=3'
+# a=1;b=2;c=3
+#
+# $ nameValueSeq '=1' 'b=' 'c=3'
+# =1;b=;c=3
+#
+# $ nameValueSeq -r '=1' 'b=' 'c=3'
+# =1;c=3
+#
+# $ nameValueSeq -R '=1' 'b=' 'c=3'
+# b=;c=3
+#
+# $ nameValueSeq 'a=1' 'b'
+# a=1;b=
+#
+# $ nameValueSeq -v 'a=1' 'b'
+# a=1;=b
+#
+# $ nameValueSeq -s ':' 'a=1' 'b=2' 'c=3'
+# a:1;b:2;c:3
+#
+# $ nameValueSeq -S ',' 'a=1' 'b=2' 'c=3'
+# a=1,b=2,c=3
+#
+# $ nameValueSeq -u 'a=1' 'b=2' 'a=2' 'b=2'
+# a=1;b=2;a=2
+#
+# $ nameValueSeq -t 'a= 1 ' 'b=2 ' 'c= 3'
+# a=1;b=2;a=2
+#
+# $ nameValueSeq -T ' a =1' 'b =2' ' c=3'
+# a=1;b=2;a=2
+#
+# $ nameValueSeq -d ':' 'url:http://example.com:80' 'val:start:stop'
+# url=http://example.com:80;val=start:stop
+#
+# $ nameValueSeq '[a,b]=[1,2]' '[c,d]=[3,4]'
+# a=1;a=2;b=1;b=2;c=3;c=4;d=3;d=4
+#
+# $ nameValueSeq -s ',' -S ':' -b '[a,b]=[1,2]' '[c,d]=[3,4]'
+# [a,b],[1,2]:[c,d],[3,4]
+#
+# $ nameValueSeq -S ' ' -q "My Name=[No one,Doesn't matter]"
+# My\ Name=No\ one My\ Name=Doesn\'t\ matter
+function nameValueSeq()
+{
+    local DELIM='='
+    local PAIR_SEP=';'
+    local SEP='='
+    declare -i BYPASS_SEQUENCES=0
+    declare -i REMOVE_NULL_NAMES=0
+    declare -i REMOVE_NULL_VALUES=0
+    declare -i SINGLE_IS_VALUE=0
+    declare -i TRIM_NAMES=0
+    declare -i TRIM_VALUES=0
+    local FLAG_PRESERVE_NULL_NAMES='-N'
+    local FLAG_PRESERVE_NULL_VALUES='-n'
+    local FLAG_QUOTED=''
+    local FLAG_UNIQUE=''
+
+    # Parse function options.
+    declare -i OPTIND
+    local OPT=''
+
+    while getopts ":bd:qrRs:S:tTuv" OPT
+    do
+        case "${OPT}" in
+        b)
+            let BYPASS_SEQUENCES=1
+            ;;
+        d)
+            DELIM="${OPTARG}"
+            [[ -z "${DELIM}" || "${DELIM}" =~ [][-] ]] && return 1
+            ;;
+        q)
+            FLAG_QUOTED="-${OPT}"
+            ;;
+        r)
+            let REMOVE_NULL_VALUES=1
+            FLAG_PRESERVE_NULL_VALUES=''
+            ;;
+        R)
+            let REMOVE_NULL_NAMES=1
+            FLAG_PRESERVE_NULL_NAMES=''
+            ;;
+        s)
+            SEP="${OPTARG}"
+            ;;
+        S)
+            PAIR_SEP="${OPTARG}"
+            ;;
+        t)
+            let TRIM_VALUES=1
+            ;;
+        T)
+            let TRIM_NAMES=1
+            ;;
+        u)
+            FLAG_UNIQUE="-${OPT}"
+            ;;
+        v)
+            let SINGLE_IS_VALUE=1
+            ;;
+        *)
+            return 2
+        esac
+    done
+    shift $(( OPTIND - 1 ))
+    # Done parsing function options.
+
+    # It's safe to use '[' as a split indicator, because we use it as the
+    # opening delimiter for sequences in this function; as such, permuted
+    # strings will never have '[' in their resulting permutation output.
+    local SPLIT='['
+
+    declare -a RESULTS=()
+
+    declare -i TRIM_TRAIL_NL=0
+    [[ "${DELIM}" =~ $'\n' ]] || let TRIM_TRAIL_NL=1
+
+    while [ $# -gt 0 ]
+    do
+        local PAIR_STR="${1}"
+        shift
+
+        local PAIR_LIST
+        PAIR_LIST="$( splitList -d "${DELIM}" "${PAIR_STR}" )" || return
+
+        unset PAIR
+        declare -a PAIR=() # Compatibility fix.
+        declare -a PAIR="( ${PAIR_LIST} )"
+        declare -i PAIR_LEN=${#PAIR[@]}
+
+        local NAME=''
+        local VALUE=''
+
+        case ${PAIR_LEN} in
+        1)
+            if [ ${SINGLE_IS_VALUE} -ne 0 ]
+            then
+                VALUE="${PAIR[0]}"
+            else
+                NAME="${PAIR[0]}"
+            fi
+            ;;
+        2)
+            NAME="${PAIR[0]}"
+            VALUE="${PAIR[1]}"
+            ;;
+        *)
+            NAME="${PAIR[0]}"
+            VALUE="${PAIR_STR:$(( ${#NAME} + 1 ))}"
+            ;;
+        esac
+
+        [[ ${TRIM_NAMES} -ne 0 ]] && {
+
+            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+            NAME="${NAME%"${NAME##*[![:space:]]}"}"
+        }
+
+        [[ -n "${NAME}" || ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
+
+        [[ ${TRIM_VALUES} -ne 0 ]] && {
+
+            VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
+            VALUE="${VALUE%"${VALUE##*[![:space:]]}"}"
+        }
+
+        [[ -n "${VALUE}" || ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
+
+        [[ ${BYPASS_SEQUENCES} -eq 0 ]] || {
+
+            RESULTS[${#RESULTS[@]}]="${NAME}${SEP}${VALUE}"
+            continue
+        }
+
+        # Permute the name if it contains sequence delimiters.
+        [[ "${NAME}" =~ [][-] ]] && {
+
+            NAME="$( \
+permutedSeq ${FLAG_PRESERVE_NULL_NAMES} -s "${SPLIT}" "${NAME}" \
+    && echo _)" || return
+            NAME="${NAME%_}"
+        }
+
+        # Permute the value if it contains sequence delimiters.
+        [[ "${VALUE}" =~ [][-] ]] && {
+
+            VALUE="$( \
+permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
+    && echo _)" || return
+            VALUE="${VALUE%_}"
+        }
+
+        unset NAMES
+        declare -a NAMES=()
+        declare -i NAMES_LEN
+
+        if [ -n "${NAME}" ]
+        then
+            NAME="$( splitList -d "${SPLIT}" "${NAME}" )" || return
+            declare -a NAMES="( ${NAME} )"
+            let NAMES_LEN=${#NAMES[@]}
+        else
+            [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
+
+            NAMES=( '' )
+            let NAMES_LEN=1
+        fi
+
+        unset VALUES
+        declare -a VALUES=()
+        declare -i VALUES_LEN
+
+        if [ -n "${VALUE}" ]
+        then
+            VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" || return
+            declare -a VALUES="( ${VALUE} )"
+            let VALUES_LEN=${#VALUES[@]}
+        else
+            [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
+
+            VALUES=( '' )
+            let VALUES_LEN=1
+        fi
+
+        declare -i I=0
+        while [ ${I} -lt ${NAMES_LEN} ]
+        do
+            declare -i J=0
+            while [ ${J} -lt ${VALUES_LEN} ]
+            do
+                RESULTS[${#RESULTS[@]}]="${NAMES[I]}${SEP}${VALUES[J]}"
+                let J++
+            done
+            let I++
+        done
+    done
+
+    translatedList ${FLAG_QUOTED} ${FLAG_UNIQUE} -s "${PAIR_SEP}" \
+        "${RESULTS[@]}"
+}
+
 # function permutedSeq:
 #
 # Returns a separated list of strings representing permutations of static text

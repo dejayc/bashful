@@ -104,6 +104,182 @@ function testSpec_intseq()
     return 0
 }
 
+function testSpec_nvseq()
+{
+    TEST_CASE="${1}"
+
+    local DESC=''
+    local CMD=''
+    local OUT=''
+    declare -i STAT=0
+    declare -i I=1
+
+    case "${TEST_CASE}" in
+    $(( I++ )) )
+        CMD="nameValueSeq 'a=1' 'b=2' 'c=3'"
+        OUT='a=1;b=2;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq '=1' 'b=' 'c=3'"
+        OUT='=1;b=;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -r '=1' 'b=' 'c=3'"
+        OUT='=1;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -R '=1' 'b=' 'c=3'"
+        OUT='b=;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq 'a=1' 'b'"
+        OUT='a=1;b='
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -v 'a=1' 'b'"
+        OUT='a=1;=b'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -s ':' 'a=1' 'b=2' 'c=3'"
+        OUT='a:1;b:2;c:3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -S ',' 'a=1' 'b=2' 'c=3' 'd=4'"
+        OUT='a=1,b=2,c=3,d=4'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -S ',' 'a=1' 'b=2' 'c=3'"
+        OUT='a=1,b=2,c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -u 'a=1' 'b=2' 'a=2' 'b=2'"
+        OUT='a=1;b=2;a=2'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -t 'a= 1 ' 'b=2 ' 'c= 3'"
+        OUT='a=1;b=2;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -T ' a =1' 'b =2' ' c=3'"
+        OUT='a=1;b=2;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -d ':' 'url:http://example.com:80' 'val:start:stop'"
+        OUT='url=http://example.com:80;val=start:stop'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='a=1;a=2;b=1;b=2;c=3;c=4;d=3;d=4'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -s ',' -S ':' -b '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='[a,b],[1,2]:[c,d],[3,4]'
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -S ' ' -q \"My Name=[No one,Doesn't matter]\""
+        OUT="My\ Name=No\ one My\ Name=Doesn\'t\ matter"
+        DESC="Example: ${CMD}"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Pair separator'
+        CMD="nameValueSeq -S ',' 'a=1' 'b=2' 'c=3'"
+        OUT='a=1,b=2,c=3'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Value separator'
+        CMD="nameValueSeq -s ':' 'a=1' 'b=2' 'c=3'"
+        OUT='a:1;b:2;c:3'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Value delimiter'
+        CMD="nameValueSeq -d ':' 'a:1' 'b:2' 'c:3'"
+        OUT='a=1;b=2;c=3'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Name with integer permutations'
+        CMD="nameValueSeq -d ':' 'HOST[1-3]:1'"
+        OUT='HOST1=1;HOST2=1;HOST3=1'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Name with text permutations'
+        CMD="nameValueSeq -d ':' 'HOST_[PORT,RANGE]:80'"
+        OUT='HOST_PORT=80;HOST_RANGE=80'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Name with text permutations with newlines'
+        CMD="nameValueSeq -d ':' 'section:${NL}[A:${NL},B:${NL}]value'"
+        OUT="section=${NL}A:${NL}value;section=${NL}B:${NL}value"
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Value with text permutations'
+        CMD="nameValueSeq -d ':' 'HOST:192.168.0.[1-3]'"
+        OUT='HOST=192.168.0.1;HOST=192.168.0.2;HOST=192.168.0.3'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Argument with newlines'
+        CMD="nameValueSeq '[1${NL},${NL}2${NL}]=[a,b]'"
+        OUT='1=a;1=b;2=a;2=b'
+        let STAT=0
+        ;;
+    $(( I++ )) )
+        DESC='Null value delimiter'
+        CMD="nameValueSeq -d '' 'a=1' 'b=2' 'c=3'"
+        OUT=''
+        let STAT=1
+        ;;
+    all)
+        _iterateTo ${I}
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+
+    TEST_DESC="${DESC}"
+    TEST_CMD="${CMD}"
+    TEST_EXP_OUTPUT="${OUT}"
+    let TEST_EXP_STATUS=${STAT}
+    return 0
+}
+
 function testSpec_perseq()
 {
     TEST_CASE="${1}"
