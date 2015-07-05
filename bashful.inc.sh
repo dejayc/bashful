@@ -33,10 +33,10 @@ function getBashfulVersion()
 
 function indexOf()
 {
-    local FIND="${1}"
+    local FIND="${1-}"
 
     declare -i I=2
-    declare -i N=${#@}
+    declare -i N=${#@-}
 
     while [ ${I} -le ${N} ]
     do
@@ -52,82 +52,72 @@ function indexOf()
 
 function isFunction()
 {
-    local FUNCTION_NAME="${1}"
-    declare -f "${FUNCTION_NAME}" > /dev/null
+    local FUNCTION_NAME="${1-}"
+    [[ -n "${FUNCTION_NAME}" ]] && declare -f "${FUNCTION_NAME}" > /dev/null
 }
 
 function isVariableSet()
 {
-    local VAR_NAME="${1}"
-
-    [[ ! -z "${!VAR_NAME+x}" ]];
+    local VAR_NAME="${1-}"
+    [[ -n "${VAR_NAME}" && ! -z "${!VAR_NAME+x}" ]];
 }
 
 # Show an error if a command-line utility encountered an error being executed.
 function showErrorCommandExecutionError()
 {
-    local COMMAND="${1}"
-    local ERR_CODE="${2}"
+    declare -i ERR_CODE="${2-${?}}"
+    local COMMAND="${1?'INTERNAL ERROR: Command not specified'}"
 
-    {
-        cat <<:ERROR
+    stderr ${ERR_CODE} <<:ERROR || return
 ERROR: A command encountered an error during execution
 COMMAND: ${COMMAND}
 ERROR CODE: ${ERR_CODE}
 :ERROR
-    } | stderr "${ERR_CODE:-2}" || return
 }
 
 # Show an error if a required command-line utility was not executable.
 function showErrorCommandNotExecutable()
 {
-    local COMMAND="${1}"
-    local ERR_CODE="${2}"
+    declare -i ERR_CODE="${2-${?}}"
+    local COMMAND="${1?'INTERNAL ERROR: Command not specified'}"
 
-    {
-        cat <<:ERROR
+    stderr ${ERR_CODE} <<:ERROR || return
 ERROR: A required command was not executable
 COMMAND: ${COMMAND}
 :ERROR
-    } | stderr "${ERR_CODE:-2}" || return
 }
 
 # Show an error if a required script setting contains an invalid value.
 function showErrorInvalidSettingValue()
 {
-    local SETTING_NAME="${1}"
-    local SETTING_VALUE="${2}"
-    local ERR_CODE="${3}"
+    declare -i ERR_CODE="${3-${?}}"
+    local SETTING_NAME="${1?'INTERNAL ERROR: Setting not specified'}"
+    local SETTING_VALUE="${2-}"
 
-    {
-        cat <<:ERROR
+    stderr ${ERR_CODE} <<:ERROR || return
 ERROR: An invalid value was specified for a required script setting
 SETTING: ${SETTING_NAME}
 VALUE: ${SETTING_VALUE}
 :ERROR
-    } | stderr "${ERR_CODE:-2}" || return
 }
 
 # Show an error if a required script setting is missing or empty.
 function showErrorMissingSetting()
 {
-    local SETTING_NAME="${1}"
-    local ERR_CODE="${2}"
+    declare -i ERR_CODE="${2-${?}}"
+    local SETTING_NAME="${1?'INTERNAL ERROR: Setting not specified'}"
 
-    {
-        cat <<:ERROR
+    stderr ${ERR_CODE} <<:ERROR || return
 ERROR: A required script setting was missing
 SETTING: ${SETTING_NAME}
 :ERROR
-    } | stderr "${ERR_CODE:-2}" || return
 }
 
 function stderr()
 {
-    declare -i CURRENT_STATUS_CODE=${?}
-    local STATUS_CODE="${1}"
+    declare -i ERR_CODE="${1-$(( ${?} > 0 ? ${?} : 2 ))}"
 
     cat - 1>&2
 
-    return "${STATUS_CODE:-$CURRENT_STATUS_CODE}"
+    return ${ERR_CODE}
 }

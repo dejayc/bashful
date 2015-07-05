@@ -167,7 +167,7 @@ function splitList()
             done <<< "${ARG}"
         fi
 
-        declare -i SET_LEN=${#SET[@]}
+        declare -i SET_LEN=${#SET[@]-}
 
         [[ ${TRIM_TRAIL_NL} -eq 0 || ${SET_LEN} -eq 0 ]] || {
 
@@ -184,7 +184,7 @@ function splitList()
         }
 
         local LIST
-        printf -v LIST '%q ' "${SET[@]}"
+        printf -v LIST '%q ' "${SET[@]-}"
         printf -v OUT '%s%s' "${OUT}" "${LIST}"
     done
     printf '%s' "${OUT% }"
@@ -356,5 +356,5 @@ function translatedList()
         RESULTS[${#RESULTS[@]}]="${SET_MEMBER}"
     done
 
-    joinedList ${FLAG_QUOTED} -s "${SEP}" ${FLAG_TRAILING_SEP} "${RESULTS[@]}"
+    joinedList ${FLAG_QUOTED} -s "${SEP}" ${FLAG_TRAILING_SEP} "${RESULTS[@]-}"
 }

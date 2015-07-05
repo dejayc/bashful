@@ -18,7 +18,7 @@ declare NL=$'\n'
 
 function testSpec_joinlist()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -68,7 +68,7 @@ function testSpec_joinlist()
 
 function testSpec_splitlist()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -149,7 +149,7 @@ function testSpec_splitlist()
 
 function testSpec_translist()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -245,4 +245,4 @@ function testSpec_translist()
     return 0
 }
 
-executeLitest "${@}"
+executeLitest "${@-}"

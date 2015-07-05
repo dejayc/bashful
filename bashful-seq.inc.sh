@@ -9,7 +9,7 @@
 {
     declare BASHFUL_MODULE_SEQ='bashful-seq.inc.sh'
 
-    [[ -n "${BASHFUL_MODULE_LIST}" ]] || {
+    [[ -n "${BASHFUL_MODULE_LIST-}" ]] || {
 
         echo "Aborting loading of '${BASHFUL_MODULE_SEQ}':"
         echo "Dependency 'bashful-list.inc.sh' is not loaded"
@@ -107,8 +107,8 @@ function intSeq()
 ^[[:space:]]*([0-9]+)[[:space:]]*-[[:space:]]*([0-9]+)[[:space:]]*$ ]] || \
             return 1
 
-        local FROM_STR="${BASH_REMATCH[1]}"
-        local TO_STR="${BASH_REMATCH[2]}"
+        local FROM_STR="${BASH_REMATCH[1]-}"
+        local TO_STR="${BASH_REMATCH[2]-}"
         [[ -n "${TO_STR}" ]] || TO_STR="${FROM_STR}"
 
         # Record the length of the existing numbers, to later
@@ -145,7 +145,7 @@ function intSeq()
 
     # Generate the final output.
     translatedList \
-        ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} -s "${SEP}" "${RESULTS[@]}"
+        ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} -s "${SEP}" "${RESULTS[@]-}"
 }
 
 # function nameValueSeq:
@@ -333,7 +333,7 @@ function nameValueSeq()
         unset PAIR
         declare -a PAIR=() # Compatibility fix.
         declare -a PAIR="( ${PAIR_LIST} )"
-        declare -i PAIR_LEN=${#PAIR[@]}
+        declare -i PAIR_LEN=${#PAIR[@]-}
 
         local NAME=''
         local VALUE=''
@@ -405,7 +405,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             NAME="$( splitList -d "${SPLIT}" "${NAME}" )" || return
             declare -a NAMES="( ${NAME} )"
-            let NAMES_LEN=${#NAMES[@]}
+            let NAMES_LEN=${#NAMES[@]-}
         else
             [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
 
@@ -421,7 +421,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" || return
             declare -a VALUES="( ${VALUE} )"
-            let VALUES_LEN=${#VALUES[@]}
+            let VALUES_LEN=${#VALUES[@]-}
         else
             [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
 
@@ -443,7 +443,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
     done
 
     translatedList ${FLAG_QUOTED} ${FLAG_UNIQUE} -s "${PAIR_SEP}" \
-        "${RESULTS[@]}"
+        "${RESULTS[@]-}"
 }
 
 # function permutedSeq:
@@ -683,7 +683,7 @@ function permutedSeq()
                 # that any existing final trailing delimiter is retained.
                 SEQUENCE=\
 "$( intSeq ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
-    -s "${PERM_SPLIT}" "${SEQ_SET[@]}" )" || return
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" )" || return
             else
                 SEQUENCE="$( splitList -d "${TEXT_DELIM}" "${SEQUENCE}" )" \
                     || return
@@ -693,7 +693,7 @@ function permutedSeq()
                 # that any existing final trailing delimiter is retained.
                 SEQUENCE=\
 "$( translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
-    -s "${PERM_SPLIT}" "${SEQ_SET[@]}" && echo _)" || return
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" && echo _)" || return
                 SEQUENCE="${SEQUENCE%_}"
             fi
 
@@ -707,7 +707,7 @@ function permutedSeq()
         PERM_SET_LIST="$( permutedSet \
             -q ${FLAG_UNIQUE} -d "${PERM_SPLIT}" -i '' -S \
             ${FLAG_PRESERVE_NULL_ITEMS} ${FLAG_PRESERVE_NULL_PERMS} \
-            ${FLAG_PRESERVE_NULL_SEPS} "${PERM_SET[@]}" && echo _)" \
+            ${FLAG_PRESERVE_NULL_SEPS} "${PERM_SET[@]-}" && echo _)" \
             || return
         PERM_SET_LIST="${PERM_SET_LIST%_}"
 
@@ -720,7 +720,7 @@ function permutedSeq()
 
     translatedList \
         ${FLAG_QUOTED} ${FLAG_PRESERVE_NULL_PERMS} ${FLAG_UNIQUE} \
-        -s "${PERM_SEP}" "${SETS[@]}"
+        -s "${PERM_SEP}" "${SETS[@]-}"
 }
 
 # function permutedSet:
@@ -893,19 +893,19 @@ function permutedSet()
 
             ARG="$( splitList -d "${DELIM}" "${ARG}" )" || return
             declare -a SET="( ${ARG} )"
-            let SET_LEN=${#SET[@]}
+            let SET_LEN=${#SET[@]-}
 
             [[ ${SET_LEN} -gt 0 || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
         }
 
-        let RESULTS_LEN=${#RESULTS[@]}
+        let RESULTS_LEN=${#RESULTS[@]-}
 
         # If the previous results set is empty, no previous set has been found
         # to permute.  Thus, assign the current set to the results set, and
         # skip to processing the next set.
         [[ ${RESULTS_LEN} -gt 0 ]] || {
 
-            RESULTS=( "${SET[@]}" )
+            RESULTS=( "${SET[@]-}" )
             continue
         }
 
@@ -958,13 +958,13 @@ function permutedSet()
                 NEXT_RESULTS[${#NEXT_RESULTS[@]}]="${PERM}"
             done
         done
-        RESULTS=( "${NEXT_RESULTS[@]}" )
+        RESULTS=( "${NEXT_RESULTS[@]-}" )
     done
 
     # Remove completely null permutations, unless they are to be preserved.
     [[ ${PRESERVE_NULL_PERMS} -ne 0 ]] || {
 
-        let RESULTS_LEN=${#RESULTS[@]}
+        let RESULTS_LEN=${#RESULTS[@]-}
         declare -i I=0
 
         while [ ${I} -lt ${RESULTS_LEN} ]
@@ -976,5 +976,5 @@ function permutedSet()
 
     translatedList \
         ${FLAG_QUOTED} ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_PERMS} \
-        ${FLAG_TRAILING_SEP} -s "${PERM_SEP}" "${RESULTS[@]}"
+        ${FLAG_TRAILING_SEP} -s "${PERM_SEP}" "${RESULTS[@]-}"
 }

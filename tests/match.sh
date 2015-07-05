@@ -17,7 +17,7 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
 
 function testSpec_escEre()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -61,7 +61,7 @@ function testSpec_escEre()
 
 function testSpec_ifWc()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -135,7 +135,7 @@ function testSpec_ifWc()
 
 function testSpec_ordBe()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -185,7 +185,7 @@ function testSpec_ordBe()
 
 function testSpec_valname()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -239,4 +239,4 @@ function testSpec_valname()
     return 0
 }
 
-executeLitest "${@}"
+executeLitest "${@-}"

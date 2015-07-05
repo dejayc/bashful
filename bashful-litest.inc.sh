@@ -71,14 +71,14 @@ function executeLitest()
         ;;
     'all')
         _executeAllTests \
-            "${*}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
+            "${*-}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
         ;;
     'list')
-        _listAllTestNames "${*}"
+        _listAllTestNames "${*-}"
         ;;
     *)
         _executeTestCasesForTest \
-            "${TEST_NAME}" "${*}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
+            "${TEST_NAME}" "${*-}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
         ;;
     esac
 }
@@ -86,7 +86,7 @@ function executeLitest()
 # Sample testSpec function to demonstrate usage.
 function testSpec__litest()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -134,7 +134,7 @@ function testSpec__litest()
 
 function testSpecs_all()
 {
-    declare -i SUPPRESS_HIDDEN="${1}"
+    declare -i SUPPRESS_HIDDEN="${1-}"
 
     local FN_DECL_LIST="$( declare -f -F )"
     local TEST_NAME_LIST=''
@@ -142,8 +142,6 @@ function testSpecs_all()
     while read -r TEST_SPEC
     do
         local TEST_NAME="${TEST_SPEC#declare -f testSpec_}"
-
-    declare -i OMIT_HIDDEN="${1}"
 
         [[ "${TEST_NAME}" == "${TEST_SPEC}" ]] && continue
         [[ "${TEST_NAME:0:1}" != '_' ||
@@ -163,7 +161,7 @@ function _describeAllTestCases()
 
     declare -a TEST_NAMES=()
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
-    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]}
+    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_NAMES_LEN} ]
@@ -178,7 +176,7 @@ function _describeAllTestCases()
 
 function _describeAllTestCasesForTest()
 {
-    local TEST_NAME="${1}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
 
     echo "The following test cases are available for test '${TEST_NAME}':"
 
@@ -186,7 +184,7 @@ function _describeAllTestCasesForTest()
 
     declare -a TEST_CASES
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
-    declare -i TEST_CASES_LEN=${#TEST_CASES[@]}
+    declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_CASES_LEN} ]
@@ -202,21 +200,17 @@ function _describeAllTestCasesForTest()
 
 function _executeAllTests()
 {
-    local TEST_NAMES_LIST="${1}"
-    declare -i IGNORE_FAIL="${2}"
-    declare -i VERBOSITY="${3}"
-    declare -i ITERATIONS="${4}"
-
-    [[ -n "${TEST_NAMES_LIST}" ]] || {
-
-        TEST_NAMES_LIST=" $( _getAllTestNames 1 ) " || return
-    }
+    local TEST_NAMES_LIST
+    TEST_NAMES_LIST="${1:-" $( _getAllTestNames 1 ) "}" || return
+    declare -i IGNORE_FAIL="${2-}"
+    declare -i VERBOSITY="${3-}"
+    declare -i ITERATIONS="${4-}"
 
     _verifyTestNames "${TEST_NAMES_LIST}" || return
 
     declare -a TEST_NAMES
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
-    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]}
+    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_NAMES_LEN} ]
@@ -231,13 +225,13 @@ function _executeAllTests()
 
 function _executeTestCase()
 {
-    local TEST_NAME="${1}"
-    local TEST_CASE="${2}"
-    local TEST_DESC="${3}"
-    local TEST_CMD="${4}"
-    local EXPECTED_OUTPUT="${5}"
-    declare -i EXPECTED_STATUS="${6}"
-    declare -i VERBOSITY="${7}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
+    local TEST_CASE="${2?'INTERNAL ERROR: Test case not specified'}"
+    local TEST_DESC="${3-}"
+    local TEST_CMD="${4-}"
+    local EXPECTED_OUTPUT="${5-}"
+    declare -i EXPECTED_STATUS="${6-}"
+    declare -i VERBOSITY="${7-}"
 
     if [ -n "${TEST_DESC}" ]
     then
@@ -308,11 +302,11 @@ ERROR_MSG
 
 function _executeTestCasesForTest()
 {
-    local TEST_NAME="${1}"
-    local TEST_CASES_LIST="${2}"
-    declare -i IGNORE_FAIL="${3}"
-    declare -i VERBOSITY="${4}"
-    declare -i ITERATIONS="${5}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
+    local TEST_CASES_LIST="${2-}"
+    declare -i IGNORE_FAIL="${3-}"
+    declare -i VERBOSITY="${4-}"
+    declare -i ITERATIONS="${5-}"
 
     case "${TEST_CASES_LIST}" in
     '')
@@ -334,7 +328,7 @@ function _executeTestCasesForTest()
 
     declare -a TEST_CASES
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
-    declare -i TEST_CASES_LEN=${#TEST_CASES[@]}
+    declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_CASES_LEN} ]
@@ -365,13 +359,13 @@ function _executeTestCasesForTest()
 
 function _executeTestLoop()
 {
-    local TEST_NAME="${1}"
-    local TEST_CASE="${2}"
-    local TEST_DESC="${3}"
-    local TEST_CMD="${4}"
-    declare -i ITERATIONS="${5}"
-    declare -i VERBOSITY="${6}"
-    declare -i IGNORE_FAIL="${7}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
+    local TEST_CASE="${2?'INTERNAL ERROR: Test case not specified'}"
+    local TEST_DESC="${3-}"
+    local TEST_CMD="${4-}"
+    declare -i ITERATIONS="${5-}"
+    declare -i VERBOSITY="${6-}"
+    declare -i IGNORE_FAIL="${7-}"
 
     declare -i STATUS=0
     declare -i I=0
@@ -419,8 +413,8 @@ EVAL
 
 function _executeTestSpecForTestCase()
 {
-    local TEST_NAME="${1}"
-    local TEST_CASE="${2}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
+    local TEST_CASE="${2?'INTERNAL ERROR: Test case not specified'}"
 
     local SPEC_FN
     SPEC_FN="$( _getTestSpecFn "${TEST_NAME}" )" || return
@@ -438,7 +432,7 @@ function _executeTestSpecForTestCase()
 
 function _getAllTestCasesForTest()
 {
-    local TEST_NAME="${1}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
 
     local SPEC_FN
     SPEC_FN="$( _getTestSpecFn "${TEST_NAME}" )" || return
@@ -456,7 +450,7 @@ function _getAllTestCasesForTest()
 
 function _getAllTestNames()
 {
-    declare -i SUPPRESS_HIDDEN="${1}"
+    declare -i SUPPRESS_HIDDEN="${1-}"
 
     local TEST_NAMES_LIST
     TEST_NAMES_LIST="$( testSpecs_all ${SUPPRESS_HIDDEN} )" || {
@@ -471,13 +465,7 @@ function _getAllTestNames()
 
 function _getTestSpecFn()
 {
-    local TEST_NAME="${1}"
-
-    [[ -n "${TEST_NAME}" ]] || {
-
-        echo "INTERNAL ERROR: Missing test name" >&2
-        return 1
-    }
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
 
     local SPEC_FN="testSpec_${TEST_NAME}"
 
@@ -497,7 +485,7 @@ function _getTestSpecFn()
 
 function _iterateTo()
 {
-    declare -i I="${1}"
+    declare -i I="${1-}"
     declare -i L=$(( I - 1 ))
     declare -i J=1
     while [ ${J} -lt ${L} ]
@@ -512,11 +500,11 @@ function _iterateTo()
 
 function _listAllTestNames()
 {
-    local TEST_NAMES_LIST="${1}"
+    local TEST_NAMES_LIST="${1-}"
 
     declare -a TEST_NAMES
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
-    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]}
+    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
 
     if [ ${TEST_NAMES_LEN} -gt 0 ]
     then
@@ -546,7 +534,7 @@ function _listAllTestNames()
 
 function _listTestCasesForTest()
 {
-    local TEST_NAME="${1}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
 
     local TEST_CASES_LIST
     TEST_CASES_LIST="$( _getAllTestCasesForTest "${TEST_NAME}" )" || return
@@ -677,15 +665,15 @@ USAGE_TEXT
 
 function _verifyTestCases()
 {
-    local TEST_NAME="${1}"
-    local TEST_CASES_LIST="${2}"
+    local TEST_NAME="${1?'INTERNAL ERROR: Test name not specified'}"
+    local TEST_CASES_LIST="${2-}"
 
     local ALL_TEST_NAMES
     ALL_TEST_NAMES=" $( _getAllTestCasesForTest "${TEST_NAME}" ) " || return
 
     declare -a TEST_CASES=()
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
-    declare -i TEST_CASES_LEN=${#TEST_CASES[@]}
+    declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_CASES_LEN} ]
@@ -705,14 +693,14 @@ function _verifyTestCases()
 
 function _verifyTestNames()
 {
-    local TEST_NAMES_LIST="${1}"
+    local TEST_NAMES_LIST="${1-}"
 
     local ALL_TEST_NAMES
     ALL_TEST_NAMES=" $( _getAllTestNames ) " || return
 
     declare -a TEST_NAMES=()
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
-    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]}
+    declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
     declare -i I=0
 
     while [ ${I} -lt ${TEST_NAMES_LEN} ]

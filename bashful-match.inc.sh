@@ -9,7 +9,7 @@
 {
     declare BASHFUL_MODULE_MATCH='bashful-match.inc.sh'
 
-    [[ -n "${BASHFUL_MODULE_LIST}" ]] || {
+    [[ -n "${BASHFUL_MODULE_LIST-}" ]] || {
 
         echo "Aborting loading of '${BASHFUL_MODULE_MATCH}':"
         echo "Dependency 'bashful-list.inc.sh' is not loaded"
@@ -30,7 +30,7 @@
 # Hello\? I need \$5 \(please\)
 function escapedExtendedRegex ()
 {
-    local REGEX="${1}"
+    local REGEX="${1-}"
 
     # These following variables exist to prevent various bash shell versions,
     # and even syntax highlighting in different text editors, from becoming
@@ -82,8 +82,8 @@ function escapedExtendedRegex ()
 # 1
 function ifWildcardMatches()
 {
-    local VALUE="${1}"
-    local PATTERN="${2}"
+    local VALUE="${1-}"
+    local PATTERN="${2-}"
 
     [[ "${VALUE}" == "${PATTERN}" ]] && return 0
 
@@ -122,7 +122,7 @@ function ifWildcardMatches()
 # ],;-
 function orderedBracketExpression()
 {
-    local EXPR="${1}"
+    local EXPR="${1-}"
 
     declare -i HAS_DASH=0
     declare -i HAS_RIGHT_BRACKET=0
@@ -152,7 +152,7 @@ function orderedBracketExpression()
 
     [[ ${HAS_RIGHT_BRACKET} -eq 0 ]] || echo -n ']'
 
-    echo -n "${ESCAPED}${EXPR}"
+    echo -n "${EXPR}"
 
     [[ ${HAS_DASH} -eq 0 ]] || echo -n '-'
 }
@@ -229,7 +229,7 @@ function valueForMatchedName()
     shift $(( OPTIND - 1 ))
     # Done parsing function options.
 
-    local NAME="${1}"
+    local NAME="${1-}"
     shift
 
     declare -i FOUND_MATCH=0
@@ -246,7 +246,7 @@ function valueForMatchedName()
         unset PAIR
         declare -a PAIR=() # Compatibility fix.
         declare -a PAIR="( ${PAIR_LIST} )"
-        declare -i PAIR_LEN=${#PAIR[@]}
+        declare -i PAIR_LEN=${#PAIR[@]-}
 
         local PATTERN=''
         local VALUE=''

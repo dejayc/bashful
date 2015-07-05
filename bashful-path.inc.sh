@@ -13,27 +13,27 @@
 # Returns the status of whether the passed path string has a leading slash.
 function hasLeadingSlash()
 {
-    echo "${1}" | grep -q -E -e '^[/]'
+    echo "${1-}" | grep -q -E -e '^[/]'
 }
 
 # Returns the status of whether the passed path string contains parent path
 # (e.g. '..' ) components.
 function hasParentPathReference()
 {
-    echo "${1}" | grep -q -E -e '(^[.][.][/]|[/][.][.][/]|[/][.][.]$|^[.][.]$)'
+    echo "${1-}" | grep -q -E -e '(^[.][.][/]|[/][.][.][/]|[/][.][.]$|^[.][.]$)'
 }
 
 # Returns the status of whether the passed path string has a trailing slash.
 function hasTrailingSlash()
 {
-    echo "${1}" | grep -q -E -e '[/]$'
+    echo "${1-}" | grep -q -E -e '[/]$'
 }
 
 # Removes superfluous path components (e.g. '/./', '//') from the passed path
 # string.
 function normalizePath()
 {
-    local NORM_PATH="${1}"
+    local NORM_PATH="${1-}"
     local PREV_PATH
 
     while [ "${PREV_PATH}" != "${NORM_PATH}" ]
@@ -58,8 +58,8 @@ function normalizePath()
 # 'quiet' as the second parameter to this function.
 function readPath()
 {
-    local REAL_PATH="${1}"
-    local FLAG_QUIET="$( echo "${2}" | tr '[:upper:]' '[:lower:]' )"
+    local REAL_PATH="${1-}"
+    local FLAG_QUIET="$( echo "${2-}" | tr '[:upper:]' '[:lower:]' )"
 
     if [ "${FLAG_QUIET}" == 'quiet' ]
     then

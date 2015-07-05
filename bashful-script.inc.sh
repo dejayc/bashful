@@ -9,7 +9,7 @@
 {
     declare BASHFUL_MODULE_SCRIPT='bashful-script.inc.sh'
 
-    [[ -n "${BASHFUL_MODULE_OPTS}" ]] || {
+    [[ -n "${BASHFUL_MODULE_OPTS-}" ]] || {
 
         echo "Aborting loading of '${BASHFUL_MODULE_SCRIPT}':"
         echo "Dependency 'bashful-opts.inc.sh' is not loaded"
@@ -61,14 +61,7 @@ function bashful_script()
         # parses the command-line options passed to this script.
         isFunction script_parseOptions && {
 
-            # Check the number of arguments so that some bash environments do
-            # not generate an error when running under 'set -u'.
-            if [ ${#@} -gt 0 ]
-            then
-                script_parseOptions "${@}" || return
-            else
-                script_parseOptions || return
-            fi
+            script_parseOptions "${@-}" || return
         }
 
         # 'script_processOptions' is a function defined in 'bashful-opts' that
@@ -77,14 +70,7 @@ function bashful_script()
         # each option.
         isFunction script_processOptions && {
 
-            # Check the number of arguments so that some bash environments do
-            # not generate an error when running under 'set -u'.
-            if [ ${#@} -gt 0 ]
-            then
-                script_processOptions "${@}" || return
-            else
-                script_processOptions || return
-            fi
+            script_processOptions "${@-}" || return
         }
     }
 
@@ -122,24 +108,23 @@ function bashful_script()
 # If debugging is enabled, output the specified text to STDERR.
 function ifDebug_stderr()
 {
-    declare -i CURRENT_STATUS_CODE=${?}
-    local REQUIRED_DEBUG_LEVEL="${1}"
-    local STATUS_CODE="${2}"
+    declare -i STATUS_CODE="${2-${?}}"
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
 
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge "${REQUIRED_DEBUG_LEVEL-1}" ]] && {
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && {
 
         cat - 1>&2
     }
 
-    return "${STATUS_CODE:-$CURRENT_STATUS_CODE}"
+    return ${STATUS_CODE}
 }
 
 # If debugging is enabled, output the specified text to STDOUT.
 function ifDebug_stdout()
 {
-    local REQUIRED_DEBUG_LEVEL="${1}"
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
 
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge "${REQUIRED_DEBUG_LEVEL-1}" ]] && {
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && {
 
         cat -
     }
@@ -148,7 +133,7 @@ function ifDebug_stdout()
 # Show usage information for the script.
 function script_showUsage()
 {
-    local VARIATION="${1}"
+    local VARIATION="${1?'INTERNAL ERROR: Usage variation not specified'}"
     case "${VARIATION}" in
     full)
         isFunction script_showUsageSynopsis && script_showUsageSynopsis

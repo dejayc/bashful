@@ -9,7 +9,7 @@
 {
     declare BASHFUL_MODULE_OPTS='bashful-opts.inc.sh'
 
-    [[ -n "${BASHFUL_VERSION}" ]] || {
+    [[ -n "${BASHFUL_VERSION-}" ]] || {
 
         echo "Aborting loading of '${BASHFUL_MODULE_OPTS}':"
         echo "Dependency 'bashful.inc.sh' is not loaded"
@@ -39,7 +39,7 @@ function script_parseOptions()
     SCRIPT_OPT_VALID_STATUS=()
     SCRIPT_OPT_OFFSET=0
 
-    [[ ${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]} -gt 0 ]] || return
+    [[ ${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]-} -gt 0 ]] || return
 
     # OPT_COUNT counts the number of options processed thus far, and is used
     # as an index into arrays of option attributes.
@@ -140,7 +140,7 @@ function script_parseOptions()
                     # number of command-line parameters, which indicates that
                     # the current command-line argument is not the final one,
                     # and thus the next argument should be considered a value.
-                    [[ ${OPTIND} -le ${#@} ]] && {
+                    [[ ${OPTIND} -le ${#@-} ]] && {
 
                         OPT_VALUE="${!OPTIND}"
                         OPTIND=$(( OPTIND + 1 ))
@@ -165,7 +165,7 @@ function script_prepareOptions()
     SCRIPT_OPT_SPEC_SHORT=''
 
     declare -i L=0
-    declare -i N=${#SCRIPT_OPT_SPEC[@]}
+    declare -i N=${#SCRIPT_OPT_SPEC[@]-}
     declare -i OPT_SPEC_HAS_LONG=0
 
     while [ ${L} -lt ${N} ]
@@ -184,11 +184,11 @@ function script_prepareOptions()
             ;;
         esac
 
-        declare -i OPT_SPEC_COUNT=${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]}
+        declare -i OPT_SPEC_COUNT=${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]-}
 
         [[ ${OPT_SPEC_COUNT} -gt 0 ]] && \
             OPT_SPEC_INDEX="$( indexOf "${OPT_NAME}" \
-                "${SCRIPT_OPT_SPEC_PARAM_NAMES[@]}" )"
+                "${SCRIPT_OPT_SPEC_PARAM_NAMES[@]-}" )"
 
         [[ "${OPT_SPEC_INDEX}" != '' ]] || {
 
@@ -228,7 +228,7 @@ function script_processOptions()
     isFunction script_processOption && {
 
         declare -i COUNT=0
-        declare -i OPT_COUNT=${#SCRIPT_OPT_NAMES[@]}
+        declare -i OPT_COUNT=${#SCRIPT_OPT_NAMES[@]-}
 
         while [ ${COUNT} -lt ${OPT_COUNT} ]
         do

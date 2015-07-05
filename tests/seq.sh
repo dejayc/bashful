@@ -20,7 +20,7 @@ declare NL=$'\n'
 
 function testSpec_intseq()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -106,7 +106,7 @@ function testSpec_intseq()
 
 function testSpec_nvseq()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -282,7 +282,7 @@ function testSpec_nvseq()
 
 function testSpec_perseq()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -659,7 +659,7 @@ function testSpec_perseq()
 
 function testSpec_perset()
 {
-    TEST_CASE="${1}"
+    TEST_CASE="${1-}"
 
     local DESC=''
     local CMD=''
@@ -887,4 +887,4 @@ function testSpec_perset()
     return 0
 }
 
-executeLitest "${@}"
+executeLitest "${@-}"
