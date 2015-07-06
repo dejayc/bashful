@@ -203,7 +203,7 @@ function script_prepareOptions()
 
         SCRIPT_OPT_SPEC_PARAM_TYPES[OPT_SPEC_INDEX]="${OPT_TYPE}"
 
-        if [ "${#OPT_NAME}" -ne 0 ]
+        if [ "${#OPT_NAME}" -eq 1 ]
         then
             if [ "${OPT_TYPE}" == 'standalone' ]
             then
