@@ -23,6 +23,8 @@
     # Determine if the script was executed via an SSH command.
     declare -i SCRIPT_IS_SSH_COMMAND=0
     [[ "$(ps -o comm= -p $PPID)" =~ 'sshd' ]] && SCRIPT_IS_SSH_COMMAND=1
+
+    true # true prevents 'set -e' from aborting
 }
 
 function isScriptInteractive()

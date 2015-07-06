@@ -36,7 +36,7 @@ function indexOf()
     local FIND="${1-}"
 
     declare -i I=2
-    declare -i N=${#@-}
+    declare -i N=${#@}
 
     while [ ${I} -le ${N} ]
     do

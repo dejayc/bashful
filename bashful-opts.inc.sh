@@ -30,6 +30,11 @@
     declare    SCRIPT_OPT_SPEC_SHORT=''
 }
 
+# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
+# the $? status of a command while preventing the script from aborting if
+# 'set -e' is active.
+
+
 # Parse the command-line options passed to the script, based on the
 # configuration previously passed to 'script_prepareOptions'.
 function script_parseOptions()
@@ -119,7 +124,7 @@ function script_parseOptions()
         esac
 
         # Update LAST_INDEX to be the same value as the last OPTIND.
-        let LAST_INDEX=OPTIND
+        let LAST_INDEX=OPTIND &&:
 
         OPT_SPEC_INDEX="$( indexOf "${OPT_NAME}" \
             "${SCRIPT_OPT_SPEC_PARAM_NAMES[@]}" )"
@@ -140,7 +145,7 @@ function script_parseOptions()
                     # number of command-line parameters, which indicates that
                     # the current command-line argument is not the final one,
                     # and thus the next argument should be considered a value.
-                    [[ ${OPTIND} -le ${#@-} ]] && {
+                    [[ ${OPTIND} -le ${#@} ]] && {
 
                         OPT_VALUE="${!OPTIND}"
                         OPTIND=$(( OPTIND + 1 ))

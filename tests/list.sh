@@ -19,7 +19,15 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-list.inc.sh" )
 }
 
-declare NL=$'\n'
+# Define global variables and constants.
+{
+    declare -r NL=$'\n'
+}
+
+# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
+# the $? status of a command while preventing the script from aborting if
+# 'set -e' is active.
+
 
 function testSpec_joinlist()
 {
@@ -36,25 +44,25 @@ function testSpec_joinlist()
         CMD="joinedList -s ',' a b c d e"
         OUT='a,b,c,d,e'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="joinedList -s ';' -S a b c d e"
         OUT='a;b;c;d;e;'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="joinedList -q 'hello there' 'my \"friend\"'"
         OUT='hello\ there my\ \"friend\"'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="joinedList -q -s ';' 'hello there' 'my \"friend\"'"
         OUT='hello\ there;my\ \"friend\"'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     all)
         _iterateTo ${I}
@@ -117,25 +125,25 @@ function testSpec_splitlist()
         CMD="splitList -d ',' 'a,b' ',c'"
         OUT="a b '' c"
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="splitList -d ',' 'a,b,' ',c'"
         OUT="a b '' c"
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="splitList -d ',' 'hello,there' 'my \"friend\"'"
         OUT='hello there my\ \"friend\"'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="splitList -d '' 'hi there' 'bye'"
         OUT='h i \  t h e r e b y e'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     all)
         _iterateTo ${I}
@@ -167,73 +175,73 @@ function testSpec_translist()
         CMD="translatedList a b a c b d a"
         OUT='a b a c b d a'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -r a b a c b d a"
         OUT='a d b c a b a'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -u a b a c b d a"
         OUT='a b c d'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -r -u a b a c b d a"
         OUT='a d b c'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -s ';' -S a b a c b d a"
         OUT='a;b;a;c;b;d;a;'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -t ' leading' ' both ' 'trailing '"
         OUT='leading both trailing'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -s ',' 1 2 '' 4 '' 5"
         OUT='1,2,4,5'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -s ',' -n 1 2 '' 4 '' 5"
         OUT='1,2,,4,,5'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -s ',' -n -u 1 2 '' 4 '' 5"
         OUT='1,2,,4,5'
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -q 'hello there' 'my \"friend\"' '\`whoami\`'"
         OUT="hello\\ there my\\ \\\"friend\\\" \\\`whoami\\\`"
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD="translatedList -s ',' -q 'hello there' 'my \"friend\"'"
         OUT="hello\\ there,my\\ \\\"friend\\\""
         DESC="Example: ${CMD}"
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         DESC='Unique with duplicate at end'
         CMD="translatedList -u a b c a"
         OUT='a b c'
-        let STAT=0
+        let STAT=0 &&:
         ;;
     all)
         _iterateTo ${I}

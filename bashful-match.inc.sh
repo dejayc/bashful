@@ -155,6 +155,7 @@ function orderedBracketExpression()
     echo -n "${EXPR}"
 
     [[ ${HAS_DASH} -eq 0 ]] || echo -n '-'
+    true # true prevents 'set -e' from aborting
 }
 
 # function valueForMatchedName

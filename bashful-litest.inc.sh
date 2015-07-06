@@ -25,6 +25,11 @@
     declare -a TEST_SCRIPTS=()
 }
 
+# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
+# the $? status of a command while preventing the script from aborting if
+# 'set -e' is active.
+
+
 # function executeLitest:
 #
 # Refer to function _showUsage for a description of how Litest works.
@@ -58,7 +63,7 @@ function executeLitest()
             let IGNORE_FAIL=1
             ;;
         's')
-            let VERBOSITY=0
+            let VERBOSITY=0 &&:
             ;;
         't')
             let ITERATIONS=${OPTARG}
@@ -81,7 +86,7 @@ function executeLitest()
     # Done parsing function options.
 
     local TEST_NAME="${1-}"
-    shift
+    shift &&:
 
     local TEST_CASE_LIST="${*-}"
 
@@ -116,13 +121,13 @@ function executeLitest()
     [[ "${-}" == "${-//e/}" ]] || {
 
         let BASH_HAS_E=1
-        let BASH_SET_E=0
+        let BASH_SET_E=0 &&:
     }
 
     [[ "${-}" == "${-//u/}" ]] || {
 
         let BASH_HAS_U=1
-        let BASH_SET_U=0
+        let BASH_SET_U=0 &&:
     }
 
     local OPTIONS_DESC=''
@@ -153,7 +158,7 @@ function executeLitest()
     while [ ${I} -lt ${TEST_SCRIPT_COUNT} ]
     do
         local TEST_SCRIPT="${TEST_SCRIPTS[I]}"
-        let I++ || true # 'true' protects against 'set -e'
+        let I+=1
 
         [[ -r "${TEST_SCRIPT}" ]] || {
 
@@ -181,12 +186,12 @@ function executeLitest()
     then
         _executeAllTests \
             "${TEST_CASE_LIST}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} \
-            || let STATUS=${?} || true
+            || let STATUS=${?} &&:
     else
         _executeTestCasesForTest \
             "${TEST_NAME}" "${TEST_CASE_LIST}" \
             ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} \
-            || let STATUS=${?} || true
+            || let STATUS=${?} &&:
     fi
 
     [[ ${BASH_SET_E} -ne 0 ]] && set +e
@@ -215,13 +220,13 @@ function testSpec__litest()
         DESC="Test basic 'echo' functionality"
         CMD="echo -n 'hello'"
         OUT='hello'
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         DESC='This test fails to match output'
         CMD="echo -n 'gotcha'"
         OUT='hello'
-        let STAT=0
+        let STAT=0 &&:
         ;;
     $(( I++ )) )
         DESC='This test fails to match status'
@@ -279,7 +284,7 @@ function _describeAllTestCases()
     while [ ${I} -lt ${TEST_NAMES_LEN} ]
     do
         local TEST_NAME="${TEST_NAMES[I]}"
-        let I++
+        let I+=1
 
         _describeAllTestCasesForTest "${TEST_NAME}"
         echo
@@ -302,7 +307,7 @@ function _describeAllTestCasesForTest()
     while [ ${I} -lt ${TEST_CASES_LEN} ]
     do
         local TEST_CASE="${TEST_CASES[I]}"
-        let I++
+        let I+=1
 
         _executeTestSpecForTestCase "${TEST_NAME}" "${TEST_CASE}" || return
 
@@ -331,7 +336,7 @@ function _executeAllTests()
             "${TEST_NAMES[I]}" all \
             ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} || return
 
-        let I++ || true # 'true' protects against 'set -e'
+        let I+=1
     done
 }
 
@@ -369,7 +374,7 @@ function _executeTestCase()
 
     declare -i STATUS=0
     local OUTPUT
-    OUTPUT="$( eval "${TEST_CMD}" )" || let STATUS=${?}
+    OUTPUT="$( eval "${TEST_CMD}" )" || let STATUS=${?} &&:
 
     [[ ${STATUS} -eq ${EXPECTED_STATUS} && \
        "${OUTPUT}" == "${EXPECTED_OUTPUT}" ]] && {
@@ -440,11 +445,11 @@ function _executeTestCasesForTest()
     while [ ${I} -lt ${TEST_CASES_LEN} ]
     do
         local TEST_CASE="${TEST_CASES[I]}"
-        let I++ || true # 'true' protects against 'set -e'
+        let I+=1
 
         _executeTestSpecForTestCase "${TEST_NAME}" "${TEST_CASE}" || {
 
-            let STATUS=${?} || true # 'true' protects against 'set -e'
+            let STATUS=${?} &&:
             break
         }
 
@@ -459,7 +464,7 @@ function _executeTestCasesForTest()
                 "${TEST_EXP_OUTPUT}" ${TEST_EXP_STATUS} ${VERBOSITY}
         fi
 
-        let STATUS=${?} || true # 'true' protects against 'set -e'
+        let STATUS=${?} &&:
         [[ ${STATUS} -eq 0 || ${IGNORE_FAIL} -ne 0 ]] || break
     done
 
@@ -600,7 +605,7 @@ function _iterateTo()
     while [ ${J} -lt ${L} ]
     do
         echo -n "${J} "
-        let J++
+        let J+=1
     done
 
     [[ ${J} -eq ${L} ]] && echo "${J}"
@@ -628,7 +633,7 @@ function _listAllTestNames()
         while [ ${I} -lt ${TEST_NAMES_LEN} ]
         do
             _describeAllTestCasesForTest "${TEST_NAMES[I]}"
-            let I++
+            let I+=1
 
             [[ ${I} -lt TEST_NAMES_LEN ]] && echo
         done
@@ -656,7 +661,7 @@ function _listTestCasesForTest()
 
 function _showSourceError()
 {
-    declare -i STATUS=${?} || true # 'true' protects against 'set -e'
+    declare -i STATUS=${?}
     declare -i SHOW_WARNING=${1-}
 
     {
@@ -833,7 +838,7 @@ function _verifyTestCases()
     while [ ${I} -lt ${TEST_CASES_LEN} ]
     do
         local TEST_CASE="${TEST_CASES[I]}"
-        let I++
+        let I+=1
 
         [[ "${ALL_TEST_NAMES}" =~ " ${TEST_CASE} " ]] || {
 
@@ -860,7 +865,7 @@ function _verifyTestNames()
     while [ ${I} -lt ${TEST_NAMES_LEN} ]
     do
         local TEST_NAME="${TEST_NAMES[I]}"
-        let I++
+        let I+=1
 
         [[ "${ALL_TEST_NAMES}" =~ " ${TEST_NAME} " ]] || {
 

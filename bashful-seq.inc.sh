@@ -17,6 +17,11 @@
     } >&2
 }
 
+# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
+# the $? status of a command while preventing the script from aborting if
+# 'set -e' is active.
+
+
 # function intSeq:
 #
 # Returns a separated list of non-negative integers, based on one or more
@@ -132,14 +137,14 @@ function intSeq()
         # Generate the sequence.
         declare -i INC=1
         [[ ${FROM} -le ${TO} ]] || let INC=-1
-        let TO+=INC
+        let TO+=INC &&:
 
         while [ ${FROM} -ne ${TO} ]
         do
             local RESULT
             printf -v RESULT "%0${L}d" "${FROM}"
             RESULTS[${#RESULTS[@]}]="${RESULT}"
-            let FROM+=INC
+            let FROM+=INC &&:
         done
     done
 
@@ -405,7 +410,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             NAME="$( splitList -d "${SPLIT}" "${NAME}" )" || return
             declare -a NAMES="( ${NAME} )"
-            let NAMES_LEN=${#NAMES[@]-}
+            let NAMES_LEN=${#NAMES[@]-} &&:
         else
             [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
 
@@ -421,7 +426,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" || return
             declare -a VALUES="( ${VALUE} )"
-            let VALUES_LEN=${#VALUES[@]-}
+            let VALUES_LEN=${#VALUES[@]-} &&:
         else
             [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
 
@@ -436,9 +441,9 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
             while [ ${J} -lt ${VALUES_LEN} ]
             do
                 RESULTS[${#RESULTS[@]}]="${NAMES[I]}${SEP}${VALUES[J]}"
-                let J++
+                let J+=1
             done
-            let I++
+            let I+=1
         done
     done
 
@@ -923,7 +928,7 @@ function permutedSet()
         while [ ${I} -lt ${RESULTS_LEN} ]
         do
             local RESULT="${RESULTS[I]}"
-            let I++
+            let I+=1
 
             [[ -n "${RESULT}" || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
 
@@ -932,7 +937,7 @@ function permutedSet()
             while [ ${J} -lt ${SET_LEN} ]
             do
                 local ITEM="${SET[J]}"
-                let J++
+                let J+=1
 
                 [[ -n "${ITEM}" || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
 
@@ -970,7 +975,7 @@ function permutedSet()
         while [ ${I} -lt ${RESULTS_LEN} ]
         do
             [[ "${RESULTS[I]}" != "${NULL_PERM}" ]] || unset RESULTS[I]
-            let I++
+            let I+=1
         done
     }
 
