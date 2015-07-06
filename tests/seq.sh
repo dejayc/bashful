@@ -42,6 +42,12 @@ function testSpec_intseq()
     declare -i I=1
 
     case "${TEST_CASE}" in
+     $(( I++ )) )
+        CMD="intSeq 2 03 4"
+        OUT='2 03 4'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
     $(( I++ )) )
         CMD="intSeq 2 4 6 10-08"
         OUT='2 4 6 10 09 08'
