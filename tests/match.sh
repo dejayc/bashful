@@ -7,13 +7,19 @@
 
 # Requires:
 #   bashful.inc.sh
+#   bashful-list.inc.sh
 #   bashful-litest.inc.sh
 #   bashful-match.inc.sh
 
+# Include basic 'litest' functionality.
 source "${0%/*}/../bashful.inc.sh" || exit
-source "${BASHFUL_PATH}/bashful-list.inc.sh" || exit
-source "${BASHFUL_PATH}/bashful-match.inc.sh" || exit
 source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
+
+# Define script dependencies, loaded prior to test execution.
+{
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-list.inc.sh" )
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-match.inc.sh" )
+}
 
 function testSpec_escEre()
 {

@@ -11,10 +11,15 @@
 #   bashful-list.inc.sh
 #   bashful-seq.inc.sh
 
+# Include basic 'litest' functionality.
 source "${0%/*}/../bashful.inc.sh" || exit
-source "${BASHFUL_PATH}/bashful-list.inc.sh" || exit
-source "${BASHFUL_PATH}/bashful-seq.inc.sh" || exit
 source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
+
+# Define script dependencies, loaded prior to test execution.
+{
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-list.inc.sh" )
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-seq.inc.sh" )
+}
 
 declare NL=$'\n'
 

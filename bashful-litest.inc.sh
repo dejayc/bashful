@@ -19,24 +19,36 @@
     declare -i TEST_EXP_STATUS=0
 }
 
+# Define global array variable to hold script dependencies, loaded prior to
+# test execution.  This array should be populated by each test suite.
+{
+    declare -a TEST_SCRIPTS=()
+}
+
 # function executeLitest:
 #
 # Refer to function _showUsage for a description of how Litest works.
 function executeLitest()
 {
+    declare -i BASH_SET_E=0
+    declare -i BASH_SET_U=0
     declare -i IGNORE_FAIL=0
     declare -i ITERATIONS=0
+    declare -i PREVENT_TRAP=0
     declare -i VERBOSITY=1
 
     # Parse function options.
     declare -i OPTIND
     local OPT=''
 
-    while getopts ":chist:v" OPT
+    while getopts ":cehist:Tuv" OPT
     do
         case "${OPT}" in
         'c')
             clear
+            ;;
+        'e')
+            let BASH_SET_E=1
             ;;
         'h')
             _showUsage
@@ -51,6 +63,12 @@ function executeLitest()
         't')
             let ITERATIONS=${OPTARG}
             ;;
+        'T')
+            let PREVENT_TRAP=1
+            ;;
+        'u')
+            let BASH_SET_U=1
+            ;;
         'v')
             let VERBOSITY=2
             ;;
@@ -62,25 +80,119 @@ function executeLitest()
     shift $(( OPTIND - 1 ))
     # Done parsing function options.
 
-    local TEST_NAME="${1}"
+    local TEST_NAME="${1-}"
     shift
+
+    local TEST_CASE_LIST="${*-}"
 
     case "${TEST_NAME}" in
     '')
         _listAllTestNames
-        ;;
-    'all')
-        _executeAllTests \
-            "${*-}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
+        return
         ;;
     'list')
-        _listAllTestNames "${*-}"
-        ;;
-    *)
-        _executeTestCasesForTest \
-            "${TEST_NAME}" "${*-}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS}
+        _listAllTestNames "${TEST_CASE_LIST}"
+        return
         ;;
     esac
+
+    case "${TEST_CASE_LIST}" in
+    '')
+        [[ "${TEST_NAME}" != 'all' ]] && {
+
+            _listTestCasesForTest "${TEST_NAME}"
+            return
+        }
+        ;;
+    'list')
+        _describeAllTestCasesForTest "${TEST_NAME}"
+        return
+        ;;
+    esac
+
+    declare -i BASH_HAS_E=0
+    declare -i BASH_HAS_U=0
+
+    [[ "${-}" == "${-//e/}" ]] || {
+
+        let BASH_HAS_E=1
+        let BASH_SET_E=0
+    }
+
+    [[ "${-}" == "${-//u/}" ]] || {
+
+        let BASH_HAS_U=1
+        let BASH_SET_U=0
+    }
+
+    local OPTIONS_DESC=''
+
+    [[ ${BASH_HAS_E} -ne 0 || ${BASH_SET_E} -ne 0 ]] && \
+        OPTIONS_DESC="'set -e'"
+
+    [[ ${BASH_HAS_U} -ne 0 || ${BASH_SET_U} -ne 0 ]] && {
+
+        if [ -n "${OPTIONS_DESC}" ]
+        then
+            OPTIONS_DESC="${OPTIONS_DESC} and 'set -u'"
+        else
+            OPTIONS_DESC="'set -u'"
+        fi
+    }
+
+    [[ -n "${OPTIONS_DESC}" ]] && \
+        echo "Tests will be executed with ${OPTIONS_DESC}"
+
+    [[ ${BASH_SET_E} -ne 0 ]] && set -e
+    [[ ${BASH_SET_U} -ne 0 ]] && set -u
+
+    declare -i TEST_SCRIPT_COUNT=${#TEST_SCRIPTS[@]-}
+    declare -i I=0
+    declare -i STATUS=0
+
+    while [ ${I} -lt ${TEST_SCRIPT_COUNT} ]
+    do
+        local TEST_SCRIPT="${TEST_SCRIPTS[I]}"
+        let I++ || true # 'true' protects against 'set -e'
+
+        [[ -r "${TEST_SCRIPT}" ]] || {
+
+            echo "ERROR: Unable to include required script" >&2
+            echo "SCRIPT: '${TEST_SCRIPT}'" >&2
+            return 1
+        }
+
+        echo 'Including required script:'
+        echo "  '${TEST_SCRIPT}'"
+
+        if [ "${-}" == "${-//e/}" ]
+        then
+            [[ ${PREVENT_TRAP} -ne 0 ]] || trap _showSourceError ERR
+            source "${TEST_SCRIPT}" || _showSourceError 1
+            [[ ${PREVENT_TRAP} -ne 0 ]] || trap - ERR
+        else
+            [[ ${PREVENT_TRAP} -ne 0 ]] || trap _showSourceError ERR
+            source "${TEST_SCRIPT}"
+            [[ ${PREVENT_TRAP} -ne 0 ]] || trap - ERR
+        fi
+    done
+
+    if [ "${TEST_NAME}" == 'all' ]
+    then
+        _executeAllTests \
+            "${TEST_CASE_LIST}" ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} \
+            || let STATUS=${?} || true
+    else
+        _executeTestCasesForTest \
+            "${TEST_NAME}" "${TEST_CASE_LIST}" \
+            ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} \
+            || let STATUS=${?} || true
+    fi
+
+    [[ ${BASH_SET_E} -ne 0 ]] && set +e
+    [[ ${BASH_SET_U} -ne 0 ]] && set +u
+
+    return ${STATUS}
 }
 
 # Sample testSpec function to demonstrate usage.
@@ -219,7 +331,7 @@ function _executeAllTests()
             "${TEST_NAMES[I]}" all \
             ${IGNORE_FAIL} ${VERBOSITY} ${ITERATIONS} || return
 
-        let I++
+        let I++ || true # 'true' protects against 'set -e'
     done
 }
 
@@ -309,17 +421,9 @@ function _executeTestCasesForTest()
     declare -i ITERATIONS="${5-}"
 
     case "${TEST_CASES_LIST}" in
-    '')
-        _listTestCasesForTest "${TEST_NAME}"
-        return
-        ;;
     'all')
         TEST_CASES_LIST="$( _getAllTestCasesForTest "${TEST_NAME}" )" \
             || return
-        ;;
-    'list')
-        _describeAllTestCasesForTest "${TEST_NAME}"
-        return
         ;;
     *)
         _verifyTestCases "${TEST_NAME}" "${TEST_CASES_LIST}" || return
@@ -329,14 +433,20 @@ function _executeTestCasesForTest()
     declare -a TEST_CASES
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
     declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
+
     declare -i I=0
+    declare -i STATUS=0
 
     while [ ${I} -lt ${TEST_CASES_LEN} ]
     do
         local TEST_CASE="${TEST_CASES[I]}"
-        let I++
+        let I++ || true # 'true' protects against 'set -e'
 
-        _executeTestSpecForTestCase "${TEST_NAME}" "${TEST_CASE}" || return
+        _executeTestSpecForTestCase "${TEST_NAME}" "${TEST_CASE}" || {
+
+            let STATUS=${?} || true # 'true' protects against 'set -e'
+            break
+        }
 
         if [ ${ITERATIONS} -gt 0 ]
         then
@@ -344,17 +454,16 @@ function _executeTestCasesForTest()
                 "${TEST_NAME}" "${TEST_CASE}" "${TEST_DESC}" "${TEST_CMD}" \
                 ${ITERATIONS} ${VERBOSITY} ${IGNORE_FAIL}
         else
-            declare -i STATUS=0
-
             _executeTestCase \
                 "${TEST_NAME}" "${TEST_CASE}" "${TEST_DESC}" "${TEST_CMD}" \
                 "${TEST_EXP_OUTPUT}" ${TEST_EXP_STATUS} ${VERBOSITY}
-
-            let STATUS=${?}
-
-            [[ ${STATUS} -eq 0 || ${IGNORE_FAIL} -ne 0 ]] || return ${STATUS}
         fi
+
+        let STATUS=${?} || true # 'true' protects against 'set -e'
+        [[ ${STATUS} -eq 0 || ${IGNORE_FAIL} -ne 0 ]] || break
     done
+
+    return ${STATUS}
 }
 
 function _executeTestLoop()
@@ -545,6 +654,26 @@ function _listTestCasesForTest()
     echo "Specify '${TEST_NAME} list' to list all test case descriptions."
 }
 
+function _showSourceError()
+{
+    declare -i STATUS=${?} || true # 'true' protects against 'set -e'
+    declare -i SHOW_WARNING=${1-}
+
+    {
+        if [ "${-}" == "${-//e/}" ]
+        then
+            [[ ${SHOW_WARNING} -ne 0 ]] && echo \
+"WARNING: The script finished with exit code ${STATUS}"
+        else
+            echo \
+"ERROR: The script terminated with exit code ${STATUS} while 'set -e' was" \
+'active'
+        fi
+    } >&2
+
+    return ${STATUS}
+}
+
 function _showUsage()
 {
     local CMD="${0##*/}"
@@ -554,9 +683,9 @@ function _showUsage()
     IFS='' read -r -d '' USAGE_SYNOPSIS <<USAGE_SYNOPSIS
 Usage: ${CMD}
        ${CMD} -h
-       ${CMD} [-c] [-i] [-s] [-t count] 'all' [group ...]
-       ${CMD} [-c] [-i] [-s] [-t count] [group 'all']
-       ${CMD} [-c] [-i] [-s] [-t count] [group [case ...]]
+       ${CMD} [-c] [-i] [-s] [-t count] [-T] 'all' [group ...]
+       ${CMD} [-c] [-i] [-s] [-t count] [-T] [group 'all']
+       ${CMD} [-c] [-i] [-s] [-t count] [-T] [group [case ...]]
        ${CMD} 'list' ['all']
        ${CMD} 'list' [group ...]
        ${CMD} [group] 'list'
@@ -598,6 +727,10 @@ USAGE_SYNOPSIS
 
   -c causes the screen to be cleared prior to test execution.
 
+  -e executes 'set -e' before executing test cases.  This causes test cases to
+     fail if any non-zero status code is generated by a command executed during
+     a test case.
+
   -h shows usage information.
 
   -i allows remaining test cases to be executed even if some test cases fail.
@@ -611,6 +744,21 @@ USAGE_SYNOPSIS
 
   -t allows an iteration count to be specified, which causes test executions
      to be timed as they are executed the specified number of iterations.
+     When tests are timed, their output is not checked for correctness.
+     However, a non-zero exit status will cause tests to abort unless -i was
+     specified.
+
+  -T prevents Litest from setting and clearing Bash error traps when sourcing
+     the scripts referenced in the global array TEST_SCRIPTS.  Litest normally
+     sets Bash error traps so that if 'set -e' behavior is active, and any
+     command within a sourced script generates a non-zero status, Litest will
+     report an error message instead of just aborting silently.  However, if
+     sourced scripts perform their own Bash error trap logic, that logic might
+     break due to the traps set and cleared by Litest.  In such cases, specify
+     -T to prevent Litest from altering Bash error traps.
+
+  -u executes 'set -u' before executing test cases.  This causes errors to be
+     thrown when undeclared variables are referenced.
 
   -v reports the results of each test case in verbose format, in which the
      description and executed command for each test case is reported.  By
@@ -648,7 +796,7 @@ USAGE_SYNOPSIS
 
   The testSpec function must also be capable of echoing the entire list of
   supported test cases for the test group, if 'all' is received as the first
-  parameter.  For example, 'testSpec_text all' might echo 'echo sort unique'
+  parameter.  For example, 'testSpec_text all' might echo 'echo sort uniq'
   in response.
 
   'testSpec' functions that return a status code other than 0 will cause
@@ -657,6 +805,12 @@ USAGE_SYNOPSIS
   For simplicity, the test author may choose to use ascending integers instead
   of textual test case names.  For reference on how to easily implement this,
   refer to the reference function 'testSpec__litest'.
+
+  Note that a global array, TEST_SCRIPTS, is provided for test suite authors
+  to specify scripts that should be sourced prior to test execution.  This
+  array should be populated with the full or relative path of scripts required
+  by the test suite.  If -e was specified, 'set -x' is executed prior to
+  sourcing the scripts.  Similarly, if -u was specified, 'set -u' is executed.
 USAGE_TEXT
 
     echo "${USAGE_SYNOPSIS}"
