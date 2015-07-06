@@ -105,31 +105,6 @@ function bashful_script()
     }
 }
 
-# If debugging is enabled, output the specified text to STDERR.
-function ifDebug_stderr()
-{
-    declare -i STATUS_CODE="${2-${?}}"
-    local REQUIRED_DEBUG_LEVEL="${1-1}"
-
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && {
-
-        cat - 1>&2
-    }
-
-    return ${STATUS_CODE}
-}
-
-# If debugging is enabled, output the specified text to STDOUT.
-function ifDebug_stdout()
-{
-    local REQUIRED_DEBUG_LEVEL="${1-1}"
-
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && {
-
-        cat -
-    }
-}
-
 # Show usage information for the script.
 function script_showUsage()
 {

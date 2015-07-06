@@ -24,11 +24,32 @@
     declare    SCRIPT_INVOKED_PATH="$( dirname "${SCRIPT_INVOKED_NAME}" )"
     declare    SCRIPT_PATH="$( cd "${SCRIPT_INVOKED_PATH}"; pwd )"
     declare    SCRIPT_RUN_DATE="$( date )"
+
+    # Script debugging level.
+    declare -i SCRIPT_DEBUG_LEVEL=0
 }
 
 function getBashfulVersion()
 {
     return "${BASHFUL_VERSION}"
+}
+
+# If debugging is enabled, output the specified text to STDERR.
+function ifDebug_stderr()
+{
+    declare -i STATUS_CODE="${2-${?}}"
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
+
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && \
+        stderr ${STATUS_CODE}
+}
+
+# If debugging is enabled, output the specified text to STDOUT.
+function ifDebug_stdout()
+{
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
+
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && stdout
 }
 
 function indexOf()
@@ -56,68 +77,32 @@ function isFunction()
     [[ -n "${FUNCTION_NAME}" ]] && declare -f "${FUNCTION_NAME}" > /dev/null
 }
 
+function isScriptInteractive()
+{
+    [[ "${-}" =~ 'i' ]]
+}
+
+function isScriptSourced()
+{
+    [[ "${BASH_ARGV}" != '' ]]
+}
+
 function isVariableSet()
 {
     local VAR_NAME="${1-}"
     [[ -n "${VAR_NAME}" && ! -z "${!VAR_NAME+x}" ]];
 }
 
-# Show an error if a command-line utility encountered an error being executed.
-function showErrorCommandExecutionError()
-{
-    declare -i ERR_CODE="${2-${?}}"
-    local COMMAND="${1?'INTERNAL ERROR: Command not specified'}"
-
-    stderr ${ERR_CODE} <<:ERROR || return
-ERROR: A command encountered an error during execution
-COMMAND: ${COMMAND}
-ERROR CODE: ${ERR_CODE}
-:ERROR
-}
-
-# Show an error if a required command-line utility was not executable.
-function showErrorCommandNotExecutable()
-{
-    declare -i ERR_CODE="${2-${?}}"
-    local COMMAND="${1?'INTERNAL ERROR: Command not specified'}"
-
-    stderr ${ERR_CODE} <<:ERROR || return
-ERROR: A required command was not executable
-COMMAND: ${COMMAND}
-:ERROR
-}
-
-# Show an error if a required script setting contains an invalid value.
-function showErrorInvalidSettingValue()
-{
-    declare -i ERR_CODE="${3-${?}}"
-    local SETTING_NAME="${1?'INTERNAL ERROR: Setting not specified'}"
-    local SETTING_VALUE="${2-}"
-
-    stderr ${ERR_CODE} <<:ERROR || return
-ERROR: An invalid value was specified for a required script setting
-SETTING: ${SETTING_NAME}
-VALUE: ${SETTING_VALUE}
-:ERROR
-}
-
-# Show an error if a required script setting is missing or empty.
-function showErrorMissingSetting()
-{
-    declare -i ERR_CODE="${2-${?}}"
-    local SETTING_NAME="${1?'INTERNAL ERROR: Setting not specified'}"
-
-    stderr ${ERR_CODE} <<:ERROR || return
-ERROR: A required script setting was missing
-SETTING: ${SETTING_NAME}
-:ERROR
-}
-
 function stderr()
 {
     declare -i ERR_CODE="${1-$(( ${?} > 0 ? ${?} : 2 ))}"
-
-    cat - 1>&2
-
+    stdout >&2
     return ${ERR_CODE}
+}
+
+function stdout()
+{
+    local LINE
+    IFS='' read -r -d '' LINE
+    echo -n "${LINE}"
 }

@@ -247,52 +247,70 @@ function script_processOptions()
     }
 }
 
-# Show an error if an invalid option is specified.
-function showErrorInvalidOption()
+function ERROR_invalidOption()
 {
-    local OPT_NAME="${1-}"
-    local ERR_CODE="${2-}"
+    declare -i STATUS=${?}
+    declare -i ERR_CODE=20
 
-    {
-        cat <<:ERROR
+    if [ -n "${2-}" ]
+    then
+        let ERR_CODE="${2}"
+    else
+        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
+    fi
+
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+
+    stderr ${ERR_CODE} <<:ERROR
 ERROR: An unsupported option was specified
 OPTION: ${OPT_NAME}
+
+$( isFunction script_showUsage && script_showUsage hint )
 :ERROR
-        isFunction script_showUsage && script_showUsage hint
-    } | \
-        stderr "${ERR_CODE:-2}" || return
 }
 
-# Show an error if an option contains an invalid value.
-function showErrorInvalidOptionValue()
+function ERROR_missingOption()
 {
-    local OPT_NAME="${1}"
-    local OPT_VALUE="${2}"
-    local ERR_CODE="${3}"
+    declare -i STATUS=${?}
+    declare -i ERR_CODE=20
 
-    {
-        cat <<:ERROR
-ERROR: An invalid value was specified for an option
-OPTION: ${OPT_NAME}
-VALUE: ${OPT_VALUE}
-:ERROR
-        isFunction script_showUsage && script_showUsage hint
-    } | \
-        stderr "${ERR_CODE:-2}" || return
-}
+    if [ -n "${2-}" ]
+    then
+        let ERR_CODE="${2}"
+    else
+        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
+    fi
 
-# Show an error if a required option is missing or empty.
-function showErrorMissingOption()
-{
-    local OPT_NAME="${1}"
-    local ERR_CODE="${2}"
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
 
-    {
-        cat <<:ERROR
+    stderr ${ERR_CODE} <<:ERROR
 ERROR: A required option was missing
-OPTION: ${OPT_NAME}
+OPTION: ${OPTION_NAME}
+
+$( isFunction script_showUsage && script_showUsage hint )
 :ERROR
-        isFunction script_showUsage && script_showUsage hint
-    } | \
-        stderr "${ERR_CODE:-2}" || return
+}
+
+function ERROR_invalidOptionValue()
+{
+    declare -i STATUS=${?}
+    declare -i ERR_CODE=40
+
+    if [ -n "${3-}" ]
+    then
+        let ERR_CODE="${3}"
+    else
+        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
+    fi
+
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+    local OPTION_VALUE="${2-}"
+
+    stderr ${ERR_CODE} <<:ERROR
+ERROR: An invalid value was specified for an option
+OPTION: ${OPTION_NAME}
+VALUE: ${OPTION_VALUE}
+
+$( isFunction script_showUsage && script_showUsage hint )
+:ERROR
 }
