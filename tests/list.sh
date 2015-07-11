@@ -152,8 +152,32 @@ function testSpec_splitlist()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="splitList -d ',' 'a,'"
+        OUT="a"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' 'a,,'"
+        OUT="a ''"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' ',,'"
+        OUT="'' ''"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="splitList -d ',' 'a,b,' ',c'"
         OUT="a b '' c"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' 'a,b,,' ',c'"
+        OUT="a b '' '' c"
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;

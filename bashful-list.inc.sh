@@ -138,8 +138,20 @@ function joinedList()
 # $ splitList -d ',' 'a,b' ',c'
 # a b '' c
 #
+# $ splitList -d ',' 'a,'
+# a
+#
+# $ splitList -d ',' 'a,,'
+# a ''
+#
+# $ splitList -d ',' ',,'
+# '' ''
+#
 # $ splitList -d ',' 'a,b,' ',c'
 # a b '' c
+# splitList -d ',' 'a,b,,' ',c'
+#
+# a b '' '' c
 #
 # $ splitList -d ',' 'hello,there' 'my "friend"'
 # hello there my\ \"friend\"
