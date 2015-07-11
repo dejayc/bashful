@@ -361,6 +361,12 @@ function testSpec_perseq()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="permutedSeq -s ':' -N '[,,]'"
+        OUT='::'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         DESC='No args'
         CMD='permutedSeq'
         OUT=''

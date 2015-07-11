@@ -551,6 +551,9 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
 #
 # $ permutedSeq -q '[Hi,Bye] [there,you]'
 # Hi\ there Hi\ you Bye\ there Bye\ you
+#
+# $ permutedSeq -s ':' -N '[,,]'
+# :
 function permutedSeq()
 {
     local OPEN_DELIM='['
