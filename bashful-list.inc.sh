@@ -149,8 +149,8 @@ function joinedList()
 #
 # $ splitList -d ',' 'a,b,' ',c'
 # a b '' c
-# splitList -d ',' 'a,b,,' ',c'
 #
+# splitList -d ',' 'a,b,,' ',c'
 # a b '' '' c
 #
 # $ splitList -d ',' 'hello,there' 'my "friend"'
@@ -402,5 +402,9 @@ function translatedList()
         RESULTS[${#RESULTS[@]}]="${SET_MEMBER}"
     done
 
-    joinedList ${FLAG_QUOTED} -s "${SEP}" ${FLAG_TRAILING_SEP} "${RESULTS[@]-}"
+    if [ ${#RESULTS[@]} -gt 0 ]
+    then
+        joinedList ${FLAG_QUOTED} -s "${SEP}" ${FLAG_TRAILING_SEP} \
+            "${RESULTS[@]}"
+    fi
 }
