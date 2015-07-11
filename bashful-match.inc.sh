@@ -231,7 +231,7 @@ function valueForMatchedName()
     # Done parsing function options.
 
     local NAME="${1-}"
-    shift
+    shift ||:
 
     declare -i FOUND_MATCH=0
     local MATCH=''

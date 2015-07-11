@@ -51,7 +51,7 @@ function processScriptOptions()
     declare -a OPT_SPEC_TYPES=()
 
     declare -i N=${1-}
-    shift
+    shift ||:
 
     declare -i L=0
     declare -i OPT_SPEC_COUNT=0
@@ -61,7 +61,7 @@ function processScriptOptions()
         let L+=1
 
         local OPT_SPEC_NAME="${1}"
-        shift
+        shift ||:
 
         declare -i OPT_SPEC_REQUIRES_VALUE=0
         local OPT_SPEC_INDEX=''
