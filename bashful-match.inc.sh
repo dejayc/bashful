@@ -28,7 +28,7 @@
 #
 # $ escapedExtendedRegex 'Hello? I need $5 (please)'
 # Hello\? I need \$5 \(please\)
-function escapedExtendedRegex ()
+function escapedExtendedRegex()
 {
     local REGEX="${1-}"
 
@@ -162,7 +162,7 @@ function orderedBracketExpression()
 #
 # Accepts a name as the first argument, and any number of name/value pairs as
 # subsequent arguments, and returns the value of the name/value pair that
-# matches the specified name.  If no match is found, returns the status code 3.
+# matches the specified name.  If no match is found, returns the status code 1.
 #
 # -l optionally returns the value of the last name/value pair that matches the
 #    specified name.  By default, the value of the first name/value pair that
@@ -288,5 +288,5 @@ function valueForMatchedName()
         }
     done
     echo -n "${MATCH}"
-    [[ ${FOUND_MATCH} -ne 0 ]] || return 3
+    [[ ${FOUND_MATCH} -ne 0 ]]
 }
