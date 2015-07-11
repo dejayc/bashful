@@ -8,9 +8,6 @@
 # Requires:
 #   No other bashful components are required.
 
-# Exit if Bashful was previously included.
-[[ "${BASHFUL_VERSION:-}" ]] && exit 0
-
 # Initialize global variables.
 {
     # Bashful information.
