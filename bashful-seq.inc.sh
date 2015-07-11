@@ -687,26 +687,31 @@ function permutedSeq()
             declare -a SEQ_SET=()
 
             # Check for text or integer sequence.
-            if [[ "${SEQUENCE}" =~ ^[-0-9,[:space:]]*$ ]]
+            if [[ "${SEQUENCE}" =~ ^[-0-9,[:space:]]+$ ]]
             then
                 SEQUENCE="$( splitList -d ',' "${SEQUENCE}" )" || return
                 declare -a SEQ_SET="( ${SEQUENCE} )"
 
-                # Parse set as an integer sequence, appending the delimiter so
-                # that any existing final trailing delimiter is retained.
-                SEQUENCE=\
-"$( intSeq ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
-    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" )" || return
+                # Appending a non-whitespace character, such as '_', to a
+                # captured string allows any trailing newlines to be retained,
+                # whereas otherwise they would be trimmed.  Then, remove '_'
+                # from the string.
+                SEQUENCE="$( \
+intSeq ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" && echo '_' )" || return
+                SEQUENCE="${SEQUENCE%_}"
             else
                 SEQUENCE="$( splitList -d "${TEXT_DELIM}" "${SEQUENCE}" )" \
                     || return
                 declare -a SEQ_SET="( ${SEQUENCE} )"
 
-                # Parse set as a text sequence, appending the delimiter so
-                # that any existing final trailing delimiter is retained.
-                SEQUENCE=\
-"$( translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
-    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" && echo _)" || return
+                # Appending a non-whitespace character, such as '_', to a
+                # captured string allows any trailing newlines to be retained,
+                # whereas otherwise they would be trimmed.  Then, remove '_'
+                # from the string.
+                SEQUENCE="$( \
+translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
+    -s "${PERM_SPLIT}" "${SEQ_SET[@]-}" && echo '_' )" || return
                 SEQUENCE="${SEQUENCE%_}"
             fi
 
@@ -717,10 +722,15 @@ function permutedSeq()
         local PERM_SET_LIST
 
         # Generate a permuted set based on the set of permuters.
+        #
+        # Appending a non-whitespace character, such as '_', to a captured
+        # string allows any trailing newlines to be retained, whereas
+        # otherwise they would be trimmed.  Then, remove '_' from the string.
         PERM_SET_LIST="$( permutedSet \
             -q ${FLAG_UNIQUE} -d "${PERM_SPLIT}" -i '' -S \
             ${FLAG_PRESERVE_NULL_ITEMS} ${FLAG_PRESERVE_NULL_PERMS} \
-            ${FLAG_PRESERVE_NULL_SEPS} "${PERM_SET[@]-}" && echo _)" \
+            ${FLAG_PRESERVE_NULL_SEPS} "${PERM_SET[@]-}" \
+                && echo '_' )" \
             || return
         PERM_SET_LIST="${PERM_SET_LIST%_}"
 
