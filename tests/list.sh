@@ -53,6 +53,30 @@ function testSpec_joinlist()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="joinedList -s ',' a ''"
+        OUT='a,,'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="joinedList -s ',' -S a ''"
+        OUT='a,,'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="joinedList -s ',' '' ''"
+        OUT=',,'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="joinedList -q '' ''"
+        OUT="'' '' "
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="joinedList -q 'hello there' 'my \"friend\"'"
         OUT='hello\ there my\ \"friend\"'
         DESC="Example: ${CMD}"

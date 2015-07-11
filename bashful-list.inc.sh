@@ -30,7 +30,9 @@
 # -s optionally specifies an output separator.  Defaults to ' '.
 #
 # -S optionally appends an output separator at the end of the output.  By
-#    default, no output separator appears at the end of the output.
+#    default, no output separator appears at the end of the output.  If an
+#    output separator already exists at the end of the output because the
+#    last item is null, an additional output separator will not be appended.
 #
 # Examples:
 #
@@ -39,6 +41,18 @@
 #
 # $ joinedList -s ';' -S a b c d e
 # a;b;c;d;e;
+#
+# $ joinedList -s ',' a ''
+# a,,
+#
+# $ joinedList -s ',' -S a ''
+# a,,
+#
+# $ joinedList -s ',' '' ''
+# ,,
+#
+# $ joinedList -q '' ''
+# '' '' 
 #
 # $ joinedList -q 'hello there' 'my "friend"'
 # hello\ there my\ \"friend\"
@@ -74,16 +88,36 @@ function joinedList()
     shift $(( OPTIND - 1 ))
     # Done parsing function options.
 
-    declare -i END=$(( TRAILING_SEP == 0 ? 1 : 0 ))
-    while [ $# -gt ${END} ]
-    do
-        printf "${FORMAT_STR}%s" "${1}" "${SEP}"
-        shift
-    done
+    declare -i COUNT=$#
 
-    if [ $# -gt 0 ]
+    if [ ${COUNT} -gt 0 ]
     then
-        printf "${FORMAT_STR}" "${1}"
+        declare -i TERMINAL_NULL=0
+
+        [[ -n "${!COUNT}" ]] || {
+
+            let TERMINAL_NULL=1
+            let TRAILING_SEP=0 ||:
+        }
+
+        declare -i END=$(( TRAILING_SEP == 0 ? 1 : 0 ))
+        while [ $# -gt ${END} ]
+        do
+            printf "${FORMAT_STR}%s" "${1}" "${SEP}"
+            shift
+        done
+
+        if [ $# -gt 0 ]
+        then
+            printf "${FORMAT_STR}" "${1}"
+        fi
+
+        # If the final argument is null, append an extra separator, to be
+        # consistent with the logic of splitList.
+        if [ ${TERMINAL_NULL} -eq 1 ]
+        then
+            printf '%s' "${SEP}"
+        fi
     fi
 }
 
