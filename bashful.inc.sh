@@ -60,7 +60,7 @@ function indexOf()
     do
         [[ "${!I}" == "${FIND}" ]] && {
 
-            echo $(( I - 2 ))
+            echo -n $(( I - 2 ))
             return
         }
         let I+=1

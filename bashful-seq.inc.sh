@@ -17,9 +17,14 @@
     } >&2
 }
 
-# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
-# the $? status of a command while preventing the script from aborting if
-# 'set -e' is active.
+# NOTE: Any occurrence of '&&:' and '||:' that appears following a command is
+# designed to prevent that command from terminating the script when a non-zero
+# status is returned while 'set -e' is active.  This is especially necessary
+# with the 'let' command, which if used to assign '0' to a variable, is
+# treated as a failure.  '&&:' preserves the $? status of a command.  '||:'
+# discards the status, which is useful when the last command of a function
+# returns a non-zero status, but should not cause the function to be
+# considered as a failure.
 
 
 # function intSeq:
@@ -137,14 +142,14 @@ function intSeq()
         # Generate the sequence.
         declare -i INC=1
         [[ ${FROM} -le ${TO} ]] || let INC=-1
-        let TO+=INC &&:
+        let TO+=INC ||:
 
         while [ ${FROM} -ne ${TO} ]
         do
             local RESULT
             printf -v RESULT "%0${L}d" "${FROM}"
             RESULTS[${#RESULTS[@]}]="${RESULT}"
-            let FROM+=INC &&:
+            let FROM+=INC ||:
         done
     done
 
@@ -410,7 +415,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             NAME="$( splitList -d "${SPLIT}" "${NAME}" )" || return
             declare -a NAMES="( ${NAME} )"
-            let NAMES_LEN=${#NAMES[@]-} &&:
+            let NAMES_LEN=${#NAMES[@]-} ||:
         else
             [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
 
@@ -426,7 +431,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
         then
             VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" || return
             declare -a VALUES="( ${VALUE} )"
-            let VALUES_LEN=${#VALUES[@]-} &&:
+            let VALUES_LEN=${#VALUES[@]-} ||:
         else
             [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
 

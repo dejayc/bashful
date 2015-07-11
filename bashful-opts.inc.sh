@@ -24,9 +24,15 @@
     declare -i SCRIPT_OPT_OFFSET=0
 }
 
-# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
-# the $? status of a command while preventing the script from aborting if
-# 'set -e' is active.
+# NOTE: Any occurrence of '&&:' and '||:' that appears following a command is
+# designed to prevent that command from terminating the script when a non-zero
+# status is returned while 'set -e' is active.  This is especially necessary
+# with the 'let' command, which if used to assign '0' to a variable, is
+# treated as a failure.  '&&:' preserves the $? status of a command.  '||:'
+# discards the status, which is useful when the last command of a function
+# returns a non-zero status, but should not cause the function to be
+# considered as a failure.
+
 
 # Processes command-line options passed to the script.  The first parameter is
 # the number of supported command-line parameters, followed by the same number
@@ -225,7 +231,7 @@ function processScriptOptions()
             return
     done
 
-    let SCRIPT_OPT_OFFSET=$(( OPTIND - 1 )) &&:
+    let SCRIPT_OPT_OFFSET=$(( OPTIND - 1 )) ||:
 }
 
 function ERROR_invalidOption()

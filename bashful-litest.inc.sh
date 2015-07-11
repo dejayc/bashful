@@ -25,9 +25,14 @@
     declare -a TEST_SCRIPTS=()
 }
 
-# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
-# the $? status of a command while preventing the script from aborting if
-# 'set -e' is active.
+# NOTE: Any occurrence of '&&:' and '||:' that appears following a command is
+# designed to prevent that command from terminating the script when a non-zero
+# status is returned while 'set -e' is active.  This is especially necessary
+# with the 'let' command, which if used to assign '0' to a variable, is
+# treated as a failure.  '&&:' preserves the $? status of a command.  '||:'
+# discards the status, which is useful when the last command of a function
+# returns a non-zero status, but should not cause the function to be
+# considered as a failure.
 
 
 # function executeLitest:
@@ -63,7 +68,7 @@ function executeLitest()
             let IGNORE_FAIL=1
             ;;
         's')
-            let VERBOSITY=0 &&:
+            let VERBOSITY=0 ||:
             ;;
         't')
             let ITERATIONS=${OPTARG}
@@ -86,7 +91,7 @@ function executeLitest()
     # Done parsing function options.
 
     local TEST_NAME="${1-}"
-    shift &&:
+    shift ||:
 
     local TEST_CASE_LIST="${*-}"
 
@@ -121,13 +126,13 @@ function executeLitest()
     [[ "${-}" == "${-//e/}" ]] || {
 
         let BASH_HAS_E=1
-        let BASH_SET_E=0 &&:
+        let BASH_SET_E=0 ||:
     }
 
     [[ "${-}" == "${-//u/}" ]] || {
 
         let BASH_HAS_U=1
-        let BASH_SET_U=0 &&:
+        let BASH_SET_U=0 ||:
     }
 
     local OPTIONS_DESC=''
@@ -220,13 +225,13 @@ function testSpec__litest()
         DESC="Test basic 'echo' functionality"
         CMD="echo -n 'hello'"
         OUT='hello'
-        let STAT=0 &&:
+        let STAT=0 ||:
         ;;
     $(( I++ )) )
         DESC='This test fails to match output'
         CMD="echo -n 'gotcha'"
         OUT='hello'
-        let STAT=0 &&:
+        let STAT=0 ||:
         ;;
     $(( I++ )) )
         DESC='This test fails to match status'
