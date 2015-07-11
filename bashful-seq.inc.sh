@@ -524,9 +524,9 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
 # -n optionally preserves null values within permutations.  By default, null
 #    values are discarded.
 #
-# -N optionally preserves null separators that appear between null values
-#    and any adjacent null or non-null value.  By default, separators
-#    adjacent to null values are discarded.
+# -N optionally preserves separators that appear between null values and any
+#    adjacent null or non-null value.  By default, separators adjacent to null
+#    values are discarded.
 #
 # -p optionally preserves null values within permutations, and preserves
 #    entirely null permutations within the output.  By default, null values
