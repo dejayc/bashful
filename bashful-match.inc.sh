@@ -246,7 +246,7 @@ function valueForMatchedName()
 
         unset PAIR
         declare -a PAIR=() # Compatibility fix.
-        declare -a PAIR="( ${PAIR_LIST} )"
+        declare -a PAIR="( ${PAIR_LIST} )" || return
         declare -i PAIR_LEN=${#PAIR[@]-}
 
         local PATTERN=''

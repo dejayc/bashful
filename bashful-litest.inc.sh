@@ -304,7 +304,7 @@ function _describeAllTestCasesForTest()
 
     TEST_CASES_LIST="$( _getAllTestCasesForTest "${TEST_NAME}" )" || return
 
-    declare -a TEST_CASES
+    declare -a TEST_CASES=()
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
     declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
     declare -i I=0
@@ -330,7 +330,7 @@ function _executeAllTests()
 
     _verifyTestNames "${TEST_NAMES_LIST}" || return
 
-    declare -a TEST_NAMES
+    declare -a TEST_NAMES=()
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
     declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
     declare -i I=0
@@ -440,7 +440,7 @@ function _executeTestCasesForTest()
         ;;
     esac
 
-    declare -a TEST_CASES
+    declare -a TEST_CASES=()
     read -r -a TEST_CASES <<< "${TEST_CASES_LIST}"
     declare -i TEST_CASES_LEN=${#TEST_CASES[@]-}
 
@@ -621,7 +621,7 @@ function _listAllTestNames()
 {
     local TEST_NAMES_LIST="${1-}"
 
-    declare -a TEST_NAMES
+    declare -a TEST_NAMES=()
     read -r -a TEST_NAMES <<< "${TEST_NAMES_LIST}"
     declare -i TEST_NAMES_LEN=${#TEST_NAMES[@]-}
 

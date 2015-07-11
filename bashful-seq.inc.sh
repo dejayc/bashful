@@ -364,7 +364,7 @@ function nameValueSeq()
 
         unset PAIR
         declare -a PAIR=() # Compatibility fix.
-        declare -a PAIR="( ${PAIR_LIST} )"
+        declare -a PAIR="( ${PAIR_LIST} )" || return
         declare -i PAIR_LEN=${#PAIR[@]-}
 
         local NAME=''
@@ -433,7 +433,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_NAMES} -s "${SPLIT}" "${NAME}" \
                 then
                     NAME="$( splitList -d "${SPLIT}" "${NAME}" )" \
                         || return
-                    declare -a NAMES="( ${NAME} )"
+                    declare -a NAMES="( ${NAME} )" || return
                 else
                     [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
                 fi
@@ -468,7 +468,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
                 then
                     VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" \
                         || return
-                    declare -a VALUES="( ${VALUE} )"
+                    declare -a VALUES="( ${VALUE} )" || return
                 else
                     [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
                 fi
@@ -733,7 +733,7 @@ function permutedSeq()
             if [[ "${SEQUENCE}" =~ ^[-0-9,[:space:]]+$ ]]
             then
                 SEQUENCE="$( splitList -d ',' "${SEQUENCE}" )" || return
-                declare -a SEQ_SET="( ${SEQUENCE} )"
+                declare -a SEQ_SET="( ${SEQUENCE} )" || return
 
                 # Appending a non-whitespace character, such as '_', to a
                 # captured string allows any trailing newlines to be retained,
@@ -746,7 +746,7 @@ intSeq ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
             else
                 SEQUENCE="$( splitList -d "${TEXT_DELIM}" "${SEQUENCE}" )" \
                     || return
-                declare -a SEQ_SET="( ${SEQUENCE} )"
+                declare -a SEQ_SET="( ${SEQUENCE} )" || return
 
                 # Appending a non-whitespace character, such as '_', to a
                 # captured string allows any trailing newlines to be retained,
@@ -782,7 +782,7 @@ translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
 
     [[ ${PRESERVE_NULL_PERMS} -ne 0 ]] && FLAG_PRESERVE_NULL_PERMS='-n'
 
-    declare -a SETS="( ${PERM_SETS} )"
+    declare -a SETS="( ${PERM_SETS} )" || return
 
     translatedList \
         ${FLAG_QUOTED} ${FLAG_PRESERVE_NULL_PERMS} ${FLAG_UNIQUE} \
@@ -958,7 +958,7 @@ function permutedSet()
 
             ARG="$( splitList -d "${DELIM}" "${ARG}" )" || return
 
-            declare -a SET="( ${ARG} )"
+            declare -a SET="( ${ARG} )" || return
             let SET_LEN=${#SET[@]-}
 
             [[ ${SET_LEN} -gt 0 || ${PRESERVE_NULL_ITEMS} -ne 0 ]] || continue
