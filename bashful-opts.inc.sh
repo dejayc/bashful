@@ -24,6 +24,10 @@
     declare -i SCRIPT_OPT_OFFSET=0
 }
 
+# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
+# the $? status of a command while preventing the script from aborting if
+# 'set -e' is active.
+
 # Processes command-line options passed to the script.  The first parameter is
 # the number of supported command-line parameters, followed by the same number
 # of command-line parameter specifications, followed by the actual command-line
@@ -221,7 +225,7 @@ function processScriptOptions()
             return
     done
 
-    let SCRIPT_OPT_OFFSET=OPTIND
+    let SCRIPT_OPT_OFFSET=$(( OPTIND - 1 )) &&:
 }
 
 function ERROR_invalidOption()
