@@ -147,13 +147,31 @@ function testSpec_nvseq()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="nameValueSeq '[,,]=1' 'b=[,,]' 'c=3'"
+        OUT='=1;=1;b=;b=;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="nameValueSeq -r '=1' 'b=' 'c=3'"
         OUT='=1;c=3'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="nameValueSeq -r '[,]=1' 'b=[,,]' 'c=3'"
+        OUT='=1;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="nameValueSeq -R '=1' 'b=' 'c=3'"
+        OUT='b=;c=3'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -R '[,]=1' 'b=[,]' 'c=3'"
         OUT='b=;c=3'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
@@ -213,14 +231,26 @@ function testSpec_nvseq()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="nameValueSeq '[a,b]=[1,2]' '[c,d]=[3,4]'"
-        OUT='a=1;a=2;b=1;b=2;c=3;c=4;d=3;d=4'
+        CMD="nameValueSeq -S ' ' '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='a=1 a=2 b=1 b=2 c=3 c=4 d=3 d=4'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="nameValueSeq -s ',' -S ':' -b '[a,b]=[1,2]' '[c,d]=[3,4]'"
-        OUT='[a,b],[1,2]:[c,d],[3,4]'
+        CMD="nameValueSeq -S ' ' -b '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='[a,b]=1 [a,b]=2 [c,d]=3 [c,d]=4'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -S ' ' -B '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='a=[1,2] b=[1,2] c=[3,4] d=[3,4]'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="nameValueSeq -S ' ' -b -B '[a,b]=[1,2]' '[c,d]=[3,4]'"
+        OUT='[a,b]=[1,2] [c,d]=[3,4]'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
@@ -262,8 +292,8 @@ function testSpec_nvseq()
         ;;
     $(( I++ )) )
         DESC='Name with text permutations with newlines'
-        CMD="nameValueSeq -d ':' 'section:${NL}[A:${NL},B:${NL}]value'"
-        OUT="section=${NL}A:${NL}value;section=${NL}B:${NL}value"
+        CMD="echo -n [;nameValueSeq -d ':' 'section:${NL}[A:${NL},B:${NL}]value';echo -n ];"
+        OUT="[section=${NL}A:${NL}value;section=${NL}B:${NL}value]"
         let STAT=0 &&:
         ;;
     $(( I++ )) )

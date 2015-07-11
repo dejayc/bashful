@@ -169,7 +169,10 @@ function intSeq()
 # will be permuted into multiple resulting name/value pairs.
 #
 # -b optionally bypasses the permuting of any text or numeric sequences that
-#    may exist in the name/value pairs.
+#    may exist in the names of name/value pairs.
+#
+# -B optionally bypasses the permuting of any text or numeric sequences that
+#    may exist in the values of name/value pairs.
 #
 # -d optionally specifies one or more value delimiter characters.  The first
 #    occurrence of an input delimiter within a name/value pair will be used to
@@ -218,10 +221,19 @@ function intSeq()
 # $ nameValueSeq '=1' 'b=' 'c=3'
 # =1;b=;c=3
 #
+# $ nameValueSeq '[,]=1' 'b=[,]' 'c=3'
+# =1;=1;b=;b=;c=3
+#
 # $ nameValueSeq -r '=1' 'b=' 'c=3'
 # =1;c=3
 #
+# $ nameValueSeq -r '[,]=1' 'b=[,]' 'c=3'
+# =1;c=3
+#
 # $ nameValueSeq -R '=1' 'b=' 'c=3'
+# b=;c=3
+#
+# $ nameValueSeq -R '[,]=1' 'b=[,]' 'c=3'
 # b=;c=3
 #
 # $ nameValueSeq 'a=1' 'b'
@@ -248,11 +260,17 @@ function intSeq()
 # $ nameValueSeq -d ':' 'url:http://example.com:80' 'val:start:stop'
 # url=http://example.com:80;val=start:stop
 #
-# $ nameValueSeq '[a,b]=[1,2]' '[c,d]=[3,4]'
-# a=1;a=2;b=1;b=2;c=3;c=4;d=3;d=4
+# $ nameValueSeq -S ' ' '[a,b]=[1,2]' '[c,d]=[3,4]'
+# a=1 a=2 b=1 b=2 c=3 c=4 d=3 d=4
 #
-# $ nameValueSeq -s ',' -S ':' -b '[a,b]=[1,2]' '[c,d]=[3,4]'
-# [a,b],[1,2]:[c,d],[3,4]
+# $ nameValueSeq -S ' ' -b '[a,b]=[1,2]' '[c,d]=[3,4]'
+# [a,b]=1 [a,b]=2 [c,d]=3 [c,d]=4
+#
+# $ nameValueSeq -S ' ' -B '[a,b]=[1,2]' '[c,d]=[3,4]'
+# a=[1,2] b=[1,2] c=[3,4] d=[3,4]
+#
+# $ nameValueSeq -S ' ' -b -B '[a,b]=[1,2]' '[c,d]=[3,4]'
+# [a,b]=[1,2] [c,d]=[3,4]
 #
 # $ nameValueSeq -S ' ' -q "My Name=[No one,Doesn't matter]"
 # My\ Name=No\ one My\ Name=Doesn\'t\ matter
@@ -261,14 +279,15 @@ function nameValueSeq()
     local DELIM='='
     local PAIR_SEP=';'
     local SEP='='
-    declare -i BYPASS_SEQUENCES=0
+    declare -i BYPASS_NAME_SEQUENCES=0
+    declare -i BYPASS_VALUE_SEQUENCES=0
     declare -i REMOVE_NULL_NAMES=0
     declare -i REMOVE_NULL_VALUES=0
     declare -i SINGLE_IS_VALUE=0
     declare -i TRIM_NAMES=0
     declare -i TRIM_VALUES=0
     local FLAG_PRESERVE_NULL_NAMES='-N'
-    local FLAG_PRESERVE_NULL_VALUES='-n'
+    local FLAG_PRESERVE_NULL_VALUES='-N'
     local FLAG_QUOTED=''
     local FLAG_UNIQUE=''
 
@@ -276,11 +295,14 @@ function nameValueSeq()
     declare -i OPTIND
     local OPT=''
 
-    while getopts ":bd:qrRs:S:tTuv" OPT
+    while getopts ":bBd:qrRs:S:tTuv" OPT
     do
         case "${OPT}" in
         b)
-            let BYPASS_SEQUENCES=1
+            let BYPASS_NAME_SEQUENCES=1
+            ;;
+        B)
+            let BYPASS_VALUE_SEQUENCES=1
             ;;
         d)
             DELIM="${OPTARG}"
@@ -383,61 +405,82 @@ function nameValueSeq()
 
         [[ -n "${VALUE}" || ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
 
-        [[ ${BYPASS_SEQUENCES} -eq 0 ]] || {
+        [[ ${BYPASS_NAME_SEQUENCES} -ne 0 ]] && \
+        [[ ${BYPASS_VALUE_SEQUENCES} -ne 0 ]] && {
 
             RESULTS[${#RESULTS[@]}]="${NAME}${SEP}${VALUE}"
             continue
         }
 
-        # Permute the name if it contains sequence delimiters.
-        [[ "${NAME}" =~ [][-] ]] && {
-
-            NAME="$( \
-permutedSeq ${FLAG_PRESERVE_NULL_NAMES} -s "${SPLIT}" "${NAME}" \
-    && echo _)" || return
-            NAME="${NAME%_}"
-        }
-
-        # Permute the value if it contains sequence delimiters.
-        [[ "${VALUE}" =~ [][-] ]] && {
-
-            VALUE="$( \
-permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
-    && echo _)" || return
-            VALUE="${VALUE%_}"
-        }
-
         unset NAMES
         declare -a NAMES=()
-        declare -i NAMES_LEN
 
-        if [ -n "${NAME}" ]
-        then
-            NAME="$( splitList -d "${SPLIT}" "${NAME}" )" || return
-            declare -a NAMES="( ${NAME} )"
-            let NAMES_LEN=${#NAMES[@]-} ||:
-        else
-            [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
+        [[ ${BYPASS_NAME_SEQUENCES} -ne 0 ]] || {
 
-            NAMES=( '' )
+            # Permute the name if it contains sequence delimiters.
+            [[ "${NAME}" =~ [][-] ]] && {
+
+                # Appending a non-whitespace character, such as '_', to a
+                # captured string allows any trailing newlines to be retained,
+                # whereas otherwise they would be trimmed.  Then, remove '_'
+                # from the string.
+                NAME="$( \
+permutedSeq ${FLAG_PRESERVE_NULL_NAMES} -s "${SPLIT}" "${NAME}" \
+    && echo '_' )" || return
+                NAME="${NAME%_}"
+
+                if [ -n "${NAME}" ]
+                then
+                    NAME="$( splitList -d "${SPLIT}" "${NAME}" )" \
+                        || return
+                    declare -a NAMES="( ${NAME} )"
+                else
+                    [[ ${REMOVE_NULL_NAMES} -eq 0 ]] || continue
+                fi
+            }
+        }
+
+        declare -i NAMES_LEN=${#NAMES[@]}
+        [[ ${NAMES_LEN} -gt 0 ]] || {
+
+            NAMES=( "${NAME}" )
             let NAMES_LEN=1
-        fi
+        }
 
         unset VALUES
         declare -a VALUES=()
-        declare -i VALUES_LEN
 
-        if [ -n "${VALUE}" ]
-        then
-            VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" || return
-            declare -a VALUES="( ${VALUE} )"
-            let VALUES_LEN=${#VALUES[@]-} ||:
-        else
-            [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
+        [[ ${BYPASS_VALUE_SEQUENCES} -ne 0 ]] || {
 
-            VALUES=( '' )
+            # Permute the value if it contains sequence delimiters.
+            [[ "${VALUE}" =~ [][-] ]] && {
+
+                # Appending a non-whitespace character, such as '_', to a
+                # captured string allows any trailing newlines to be retained,
+                # whereas otherwise they would be trimmed.  Then, remove '_'
+                # from the string.
+                VALUE="$( \
+permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
+    && echo '_' )" || return
+                VALUE="${VALUE%_}"
+
+                if [ -n "${VALUE}" ]
+                then
+                    VALUE="$( splitList -d "${SPLIT}" "${VALUE}" )" \
+                        || return
+                    declare -a VALUES="( ${VALUE} )"
+                else
+                    [[ ${REMOVE_NULL_VALUES} -eq 0 ]] || continue
+                fi
+            }
+        }
+
+        declare -i VALUES_LEN=${#VALUES[@]}
+        [[ ${VALUES_LEN} -gt 0 ]] || {
+
+            VALUES=( "${VALUE}" )
             let VALUES_LEN=1
-        fi
+        }
 
         declare -i I=0
         while [ ${I} -lt ${NAMES_LEN} ]
