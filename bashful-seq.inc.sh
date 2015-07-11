@@ -55,13 +55,13 @@
 # $ intSeq -s ':' 1-5
 # 1:2:3:4:5
 #
-# $ intSeq -s ',' '1' '2' '' '4' '5' '' '6'
+# $ intSeq -s ',' '1' '2' '' '4' '5' '  ' '6'
 # 1,2,4,5,6
 #
-# $ intSeq -s ',' -n '1' '2' '' '4' '5' '' '6'
+# $ intSeq -s ',' -n '1' '2' '' '4' '5' '  ' '6'
 # 1,2,,4,5,,6
 #
-# $ intSeq -s ',' -n -u '1' '2' '' '4' '5' '' '6'
+# $ intSeq -s ',' -n -u '1' '2' '' '4' '5' '  ' '6'
 # 1,2,,4,5,6
 function intSeq()
 {
@@ -102,7 +102,7 @@ function intSeq()
         shift
 
         # Handle empty sequences appropriately.
-        [[ -n "${ARG}" ]] || {
+        [[ "${ARG}" =~ [^[:space:]] ]] || {
 
             [[ ${PRESERVE_NULL_ITEMS} -ne 0 ]] && {
 
@@ -894,7 +894,6 @@ function permutedSet()
     do
         local ARG="${1}"
         shift
-
         unset SET
         declare -a SET=( '' )
         declare -i SET_LEN=1
@@ -902,6 +901,7 @@ function permutedSet()
         [[ -n "${ARG}" ]] && {
 
             ARG="$( splitList -d "${DELIM}" "${ARG}" )" || return
+
             declare -a SET="( ${ARG} )"
             let SET_LEN=${#SET[@]-}
 

@@ -67,19 +67,19 @@ function testSpec_intseq()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="intSeq -s ',' '1' '2' '' '4' '5' '' '6'"
+        CMD="intSeq -s ',' '1' '2' '' '4' '5' '  ' '6'"
         OUT='1,2,4,5,6'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="intSeq -s ',' -n '1' '2' '' '4' '5' '' '6'"
+        CMD="intSeq -s ',' -n '1' '2' '' '4' '5' '  ' '6'"
         OUT='1,2,,4,5,,6'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="intSeq -s ',' -n -u '1' '2' '' '4' '5' '' '6'"
+        CMD="intSeq -s ',' -n -u '1' '2' '' '4' '5' '  ' '6'"
         OUT='1,2,,4,5,6'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
