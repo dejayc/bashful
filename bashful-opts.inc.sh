@@ -19,52 +19,117 @@
 
 # Initialize global variables.
 {
-    # Variables for processing command-line options.
-    declare -a SCRIPT_OPT_NAMES=()
-    declare -a SCRIPT_OPT_VALUES=()
-    declare -a SCRIPT_OPT_VALID_STATUS=()
+    # Set by 'processScriptOptions' to indicate how many leading command line
+    # parameters comprised options or option values.
     declare -i SCRIPT_OPT_OFFSET=0
-    declare -a SCRIPT_OPT_SPEC=()
-    declare -a SCRIPT_OPT_SPEC_PARAM_NAMES=()
-    declare -a SCRIPT_OPT_SPEC_PARAM_TYPES=()
-    declare    SCRIPT_OPT_SPEC_SHORT=''
 }
 
-# NOTE: Any occurrence of '&&:' in the source code is designed to preserve
-# the $? status of a command while preventing the script from aborting if
-# 'set -e' is active.
-
-
-# Parse the command-line options passed to the script, based on the
-# configuration previously passed to 'script_prepareOptions'.
-function script_parseOptions()
+# Processes command-line options passed to the script.  The first parameter is
+# the number of supported command-line parameters, followed by the same number
+# of command-line parameter specifications, followed by the actual command-line
+# parameters passed to the script.  For each command-line option, a function
+# named 'processScriptOption' will be called with the command-line option and
+# optional value.  Global variable SCRIPT_OPT_OFFSET will be set to the number
+# of command-line parameters that comprised options or option values.
+function processScriptOptions()
 {
-    SCRIPT_OPT_NAMES=()
-    SCRIPT_OPT_VALUES=()
-    SCRIPT_OPT_VALID_STATUS=()
-    SCRIPT_OPT_OFFSET=0
+    isFunction processScriptOption || return
 
-    [[ ${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]-} -gt 0 ]] || return
+    let SCRIPT_OPT_OFFSET=0
+
+    declare -a OPT_SPEC_NAMES=()
+    declare -a OPT_SPEC_TYPES=()
+
+    declare -i N=${1-}
+    shift
+
+    declare -i L=0
+    declare -i OPT_SPEC_COUNT=0
+
+    while [ ${L} -lt ${N} ]
+    do
+        let L+=1
+
+        local OPT_SPEC_NAME="${1}"
+        shift
+
+        declare -i OPT_SPEC_REQUIRES_VALUE=0
+        local OPT_SPEC_INDEX=''
+
+        case "${OPT_SPEC_NAME}" in
+        *=)
+            let OPT_SPEC_REQUIRES_VALUE=1
+            OPT_SPEC_NAME="${OPT_SPEC_NAME%=}"
+            ;;
+        esac
+
+        declare -i OPT_SPEC_COUNT=${#OPT_SPEC_NAMES[@]}
+
+        [[ ${OPT_SPEC_COUNT} -gt 0 ]] && {
+
+            OPT_SPEC_INDEX="$( \
+                indexOf "${OPT_SPEC_NAME}" "${OPT_SPEC_NAMES[@]}" )"
+        }
+
+        [[ "${OPT_SPEC_INDEX}" != '' ]] || {
+
+            OPT_SPEC_INDEX=${OPT_SPEC_COUNT}
+            OPT_SPEC_NAMES[OPT_SPEC_INDEX]="${OPT_SPEC_NAME}"
+        }
+
+        OPT_SPEC_TYPES[OPT_SPEC_INDEX]=${OPT_SPEC_REQUIRES_VALUE}
+    done
+
+    local OPT_SPEC_SHORT=''
+    declare -i OPT_SPEC_HAS_LONG=0
+
+    let L=0
+    let N=${#OPT_SPEC_NAMES[@]}
+
+    while [ ${L} -lt ${N} ]
+    do
+        local OPT_SPEC_NAME="${OPT_SPEC_NAMES[L]}"
+        declare -i OPT_SPEC_TYPE=${OPT_SPEC_TYPES[L]}
+        let L+=1
+
+        if [ "${#OPT_SPEC_NAME}" -eq 1 ]
+        then
+            if [ ${OPT_SPEC_TYPE} -eq 0 ]
+            then
+                OPT_SPEC_SHORT="${OPT_SPEC_SHORT}${OPT_SPEC_NAME}"
+            else
+                OPT_SPEC_SHORT="${OPT_SPEC_SHORT}${OPT_SPEC_NAME}:"
+            fi
+        else
+            OPT_SPEC_HAS_LONG=1
+        fi
+    done
+
+    if [ ${OPT_SPEC_HAS_LONG} -ne 0 ]
+    then
+        OPT_SPEC_SHORT=":${OPT_SPEC_SHORT}-:"
+    else
+        OPT_SPEC_SHORT=":${OPT_SPEC_SHORT}"
+    fi
 
     # OPT_COUNT counts the number of options processed thus far, and is used
     # as an index into arrays of option attributes.
     declare -i OPT_COUNT=0
 
-    # LAST_INDEX is used to determine whether the previous short option had
+    # This variable is used to determine whether the previous short option had
     # its value concatenated to the option, or was separated by whitespace,
     # which determines whether to remove optional equal sign characters
     # prepended to short option values.
-    declare -i LAST_INDEX=1
+    declare -i EXPECTED_OPTIND=2
 
-    while getopts "${SCRIPT_OPT_SPEC_SHORT}" OPT_NAME
+    local OPT_NAME=''
+
+    while getopts "${OPT_SPEC_SHORT}" OPT_NAME
     do
         let OPT_COUNT+=1
-        let LAST_INDEX+=1
-        let SCRIPT_OPT_OFFSET+=1
 
         local OPT_TYPE=''
         local OPT_VALUE=''
-        local OPT_SPEC_INDEX=''
         declare -i OPT_CHECK_VALUE=0
 
         # Set OPTARG in case script is running with 'set -u'.
@@ -84,7 +149,8 @@ function script_parseOptions()
                 # next parameter should be interpreted as its value.
                 OPT_NAME="${OPTARG}"
 
-                # Our long option might 
+                # The long option might not have a value if the option was the
+                # final command-line argument.  This will be checked later.
                 OPT_CHECK_VALUE=1
                 ;;
             esac
@@ -104,10 +170,10 @@ function script_parseOptions()
             # provided to the getopts call.
 
             case "${OPTARG}" in
-            =*) # The value beings with an equal sign, which should be removed
-                # if the value was concatenated to the short option itself,
-                # thus not separated by whitespace.
-                if [ ${OPTIND} -eq ${LAST_INDEX} ]
+            =*) # The value begins with an equal sign, which should be removed
+                # only if the value was appended to the short option itself,
+                # and not separated by whitespace.
+                if [ ${OPTIND} -eq ${EXPECTED_OPTIND} ]
                 then
                     OPT_VALUE=${OPTARG#=}
                 else
@@ -123,128 +189,39 @@ function script_parseOptions()
             ;;
         esac
 
-        # Update LAST_INDEX to be the same value as the last OPTIND.
-        let LAST_INDEX=OPTIND &&:
+        let EXPECTED_OPTIND=OPTIND+1
 
-        OPT_SPEC_INDEX="$( indexOf "${OPT_NAME}" \
-            "${SCRIPT_OPT_SPEC_PARAM_NAMES[@]}" )"
+        OPT_SPEC_INDEX="$( indexOf "${OPT_NAME}" "${OPT_SPEC_NAMES[@]}" )"
 
         if [ "${OPT_SPEC_INDEX}" == '' ]
         then
-            SCRIPT_OPT_VALID_STATUS[OPT_COUNT-1]=1
-        else
-            SCRIPT_OPT_VALID_STATUS[OPT_COUNT-1]=0
-
-            [[ ${OPT_CHECK_VALUE} -ne 0 ]] && {
-
-                OPT_TYPE="${SCRIPT_OPT_SPEC_PARAM_TYPES[OPT_SPEC_INDEX]}"
-
-                [[ "${OPT_TYPE}" == 'with-value' ]] && {
-
-                    # Only advance the offset if OPTIND is not greater than the
-                    # number of command-line parameters, which indicates that
-                    # the current command-line argument is not the final one,
-                    # and thus the next argument should be considered a value.
-                    [[ ${OPTIND} -le ${#@} ]] && {
-
-                        OPT_VALUE="${!OPTIND}"
-                        OPTIND=$(( OPTIND + 1 ))
-                        let SCRIPT_OPT_OFFSET+=1
-                    }
-                }
-            }
+            ERROR_invalidOption "${OPT_NAME}"
+            return
         fi
 
-        SCRIPT_OPT_NAMES[OPT_COUNT-1]="${OPT_NAME}"
-        SCRIPT_OPT_VALUES[OPT_COUNT-1]="${OPT_VALUE}"
-    done
-}
+        [[ ${OPT_CHECK_VALUE} -eq 0 ]] || {
 
-# Receive a configuration that specifies the command-line options supported by
-# the script, and update global variables accordingly so that command-line
-# options may be parsed when 'script_parseOptions' is invoked.
-function script_prepareOptions()
-{
-    SCRIPT_OPT_SPEC_PARAM_NAMES=()
-    SCRIPT_OPT_SPEC_PARAM_TYPES=()
-    SCRIPT_OPT_SPEC_SHORT=''
+            [[ ${OPT_SPEC_TYPES[OPT_SPEC_INDEX]} -eq 0 ]] || {
 
-    declare -i L=0
-    declare -i N=${#SCRIPT_OPT_SPEC[@]-}
-    declare -i OPT_SPEC_HAS_LONG=0
-
-    while [ ${L} -lt ${N} ]
-    do
-        local OPT_NAME="${SCRIPT_OPT_SPEC[L]}"
-        local OPT_TYPE=''
-        local OPT_SPEC_INDEX=''
-
-        case "${OPT_NAME}" in
-        *=)
-            OPT_TYPE='with-value'
-            OPT_NAME="${OPT_NAME%=}"
-            ;;
-        *)
-            OPT_TYPE='standalone'
-            ;;
-        esac
-
-        declare -i OPT_SPEC_COUNT=${#SCRIPT_OPT_SPEC_PARAM_NAMES[@]-}
-
-        [[ ${OPT_SPEC_COUNT} -gt 0 ]] && \
-            OPT_SPEC_INDEX="$( indexOf "${OPT_NAME}" \
-                "${SCRIPT_OPT_SPEC_PARAM_NAMES[@]-}" )"
-
-        [[ "${OPT_SPEC_INDEX}" != '' ]] || {
-
-            OPT_SPEC_INDEX=${OPT_SPEC_COUNT}
-            SCRIPT_OPT_SPEC_PARAM_NAMES[OPT_SPEC_INDEX]="${OPT_NAME}"
+                # If OPTIND is less than or equal to the number of command-
+                # line parameters, the next command-line parameter can be
+                # considered to be the value of the current option.
+                if [ ${OPTIND} -le ${#@} ]
+                then
+                    OPT_VALUE="${!OPTIND}"
+                    let OPTIND+=1
+                else
+                    ERROR_missingOptionValue "${OPT_NAME}"
+                    return
+                fi
+            }
         }
 
-        SCRIPT_OPT_SPEC_PARAM_TYPES[OPT_SPEC_INDEX]="${OPT_TYPE}"
-
-        if [ "${#OPT_NAME}" -eq 1 ]
-        then
-            if [ "${OPT_TYPE}" == 'standalone' ]
-            then
-                SCRIPT_OPT_SPEC_SHORT="${SCRIPT_OPT_SPEC_SHORT}${OPT_NAME}"
-            else
-                SCRIPT_OPT_SPEC_SHORT="${SCRIPT_OPT_SPEC_SHORT}${OPT_NAME}:"
-            fi
-        else
-            OPT_SPEC_HAS_LONG=1
-        fi
-
-        let L+=1
+        processScriptOption ${OPT_COUNT} "${OPT_NAME}" "${OPT_VALUE}" || \
+            return
     done
 
-    if [ ${OPT_SPEC_HAS_LONG} -ne 0 ]
-    then
-        SCRIPT_OPT_SPEC_SHORT=":${SCRIPT_OPT_SPEC_SHORT}-:"
-    else
-        SCRIPT_OPT_SPEC_SHORT=":${SCRIPT_OPT_SPEC_SHORT}"
-    fi
-}
-
-# For each command-line option passed to the script, invoke the pre-defined
-# callback function to process the option.
-function script_processOptions()
-{
-    isFunction script_processOption && {
-
-        declare -i COUNT=0
-        declare -i OPT_COUNT=${#SCRIPT_OPT_NAMES[@]-}
-
-        while [ ${COUNT} -lt ${OPT_COUNT} ]
-        do
-            local OPT_NAME="${SCRIPT_OPT_NAMES[COUNT]}"
-            local OPT_VALUE="${SCRIPT_OPT_VALUES[COUNT]}"
-            let COUNT+=1
-
-            script_processOption \
-                "${COUNT}" "${OPT_NAME}" "${OPT_VALUE}" || return
-        done
-    }
+    let SCRIPT_OPT_OFFSET=OPTIND
 }
 
 function ERROR_invalidOption()
@@ -252,6 +229,8 @@ function ERROR_invalidOption()
     declare -i STATUS=${?}
     declare -i ERR_CODE=20
 
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+
     if [ -n "${2-}" ]
     then
         let ERR_CODE="${2}"
@@ -259,35 +238,17 @@ function ERROR_invalidOption()
         [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
     fi
 
-    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+    if [ ${#OPTION_NAME} -eq 1 ]
+    then
+        OPTION_NAME="-${OPTION_NAME}"
+    else
+        OPTION_NAME="--${OPTION_NAME}"
+    fi
 
     stderr ${ERR_CODE} <<:ERROR
 ERROR: An unsupported option was specified
-OPTION: ${OPT_NAME}
-
-$( isFunction script_showUsage && script_showUsage hint )
-:ERROR
-}
-
-function ERROR_missingOption()
-{
-    declare -i STATUS=${?}
-    declare -i ERR_CODE=20
-
-    if [ -n "${2-}" ]
-    then
-        let ERR_CODE="${2}"
-    else
-        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
-    fi
-
-    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
-
-    stderr ${ERR_CODE} <<:ERROR
-ERROR: A required option was missing
-OPTION: ${OPTION_NAME}
-
-$( isFunction script_showUsage && script_showUsage hint )
+OPTION: ${OPTION_NAME}$(
+    isFunction showHelpHint && ( echo; echo; showHelpHint ) )
 :ERROR
 }
 
@@ -296,6 +257,9 @@ function ERROR_invalidOptionValue()
     declare -i STATUS=${?}
     declare -i ERR_CODE=40
 
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+    local OPTION_VALUE="${2-}"
+
     if [ -n "${3-}" ]
     then
         let ERR_CODE="${3}"
@@ -303,14 +267,73 @@ function ERROR_invalidOptionValue()
         [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
     fi
 
-    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
-    local OPTION_VALUE="${2-}"
+    if [ ${#OPTION_NAME} -eq 1 ]
+    then
+        OPTION_NAME="-${OPTION_NAME}"
+    else
+        OPTION_NAME="--${OPTION_NAME}"
+    fi
 
     stderr ${ERR_CODE} <<:ERROR
 ERROR: An invalid value was specified for an option
 OPTION: ${OPTION_NAME}
-VALUE: ${OPTION_VALUE}
+VALUE: ${OPTION_VALUE}$(
+    isFunction showHelpHint && ( echo; echo; showHelpHint ) )
+:ERROR
+}
 
-$( isFunction script_showUsage && script_showUsage hint )
+function ERROR_missingOption()
+{
+    declare -i STATUS=${?}
+    declare -i ERR_CODE=20
+
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+
+    if [ -n "${2-}" ]
+    then
+        let ERR_CODE="${2}"
+    else
+        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
+    fi
+
+    if [ ${#OPTION_NAME} -eq 1 ]
+    then
+        OPTION_NAME="-${OPTION_NAME}"
+    else
+        OPTION_NAME="--${OPTION_NAME}"
+    fi
+
+    stderr ${ERR_CODE} <<:ERROR
+ERROR: A required option was missing
+OPTION: ${OPTION_NAME}$(
+    isFunction showHelpHint && ( echo; echo; showHelpHint ) )
+:ERROR
+}
+
+function ERROR_missingOptionValue()
+{
+    declare -i STATUS=${?}
+    declare -i ERR_CODE=20
+
+    local OPTION_NAME="${1?'INTERNAL ERROR: Option not specified'}"
+
+    if [ -n "${2-}" ]
+    then
+        let ERR_CODE="${2}"
+    else
+        [[ ${STATUS} -ne 0 ]] && let ERR_CODE=STATUS
+    fi
+
+    if [ ${#OPTION_NAME} -eq 1 ]
+    then
+        OPTION_NAME="-${OPTION_NAME}"
+    else
+        OPTION_NAME="--${OPTION_NAME}"
+    fi
+
+    stderr ${ERR_CODE} <<:ERROR
+ERROR: An option that requires a value was missing the value
+OPTION: ${OPTION_NAME}$(
+    isFunction showHelpHint && ( echo; echo; showHelpHint ) )
 :ERROR
 }
