@@ -11,24 +11,19 @@
 # Initialize global variables.
 {
     # Bashful information.
-    declare    BASHFUL_VERSION='1.0'
+    declare BASHFUL_VERSION='1.0'
 
     # Script information.
-    declare    BASHFUL_PATH="$( dirname "${BASH_SOURCE[0]}" )"
-    declare    BASHFUL_PATH="$( cd "${BASHFUL_PATH}" && pwd )"
-    declare    SCRIPT_INVOKED_NAME="${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}"
-    declare    SCRIPT_NAME="$( basename "${SCRIPT_INVOKED_NAME}" )"
-    declare    SCRIPT_INVOKED_PATH="$( dirname "${SCRIPT_INVOKED_NAME}" )"
-    declare    SCRIPT_PATH="$( cd "${SCRIPT_INVOKED_PATH}"; pwd )"
-    declare    SCRIPT_RUN_DATE="$( date )"
+    declare BASHFUL_PATH="${BASH_SOURCE[0]%/*}"
+    declare BASHFUL_PATH="$( cd "${BASHFUL_PATH}" && pwd )"
+    declare SCRIPT_INVOKED_NAME="${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}"
+    declare SCRIPT_NAME="${SCRIPT_INVOKED_NAME##*/}"
+    declare SCRIPT_INVOKED_PATH="$( dirname "${SCRIPT_INVOKED_NAME}" )"
+    declare SCRIPT_PATH="$( cd "${SCRIPT_INVOKED_PATH}"; pwd )"
+    declare SCRIPT_RUN_DATE="$( date )"
 
     # Script debugging level.
     declare -i SCRIPT_DEBUG_LEVEL=0
-}
-
-function getBashfulVersion()
-{
-    return "${BASHFUL_VERSION}"
 }
 
 # If debugging is enabled, output the specified text to STDERR.
