@@ -99,7 +99,7 @@ function testSpec_parspec()
     return 0
 }
 
-function testSpec_perspec()
+function testSpec_permap()
 {
     TEST_CASE="${1-}"
 
@@ -111,14 +111,14 @@ function testSpec_perspec()
 
     case "${TEST_CASE}" in
     $(( I++ )) )
-        CMD="permutedSshSpec '[www,app][1-3]: /ftp;'"
+        CMD="permutedSshMap '[www,app][1-3]: /ftp;'"
         OUT='www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD=\
-"permutedSshSpec -d ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'"
+"permutedSshMap -d ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'"
         OUT=\
 'www1:uname\ -a\;\ ls\ -al\; www2:uname\ -a\;\ ls\ -al\; www:uname\ -a'
         DESC="Example: ${CMD}"
@@ -151,14 +151,14 @@ function testSpec_valhost()
 
     case "${TEST_CASE}" in
     $(( I++ )) )
-        CMD="valueForMatchedSshHost user@10.1.1.1 10.1.*:ten-one"
+        CMD="valueForMatchedSshHost 'user@10.1.1.1' '10.1.*:ten-one'"
         OUT='ten-one'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
     $(( I++ )) )
         CMD=\
-"valueForMatchedSshHost user@10.2.1.1 10.1.*:ten-one user@10.*:user-ten"
+"valueForMatchedSshHost 'user@10.2.1.1' '10.1.*:ten-one' 'user@10.*:user-ten'"
         OUT='user-ten'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
@@ -166,6 +166,46 @@ function testSpec_valhost()
     $(( I++ )) )
         CMD=""
         OUT=""
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    all)
+        _iterateTo ${I}
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+
+    TEST_DESC="${DESC}"
+    TEST_CMD="${CMD}"
+    TEST_EXP_OUTPUT="${OUT}"
+    let TEST_EXP_STATUS=${STAT}
+    return 0
+}
+
+function testSpec_valhosts()
+{
+    TEST_CASE="${1-}"
+
+    local DESC=''
+    local CMD=''
+    local OUT=''
+    declare -i STAT=0
+    declare -i I=1
+
+    case "${TEST_CASE}" in
+    $(( I++ )) )
+        CMD="valuesForMatchedSshHosts '10.1.*:ten-one' 'user@10.1.1.1'"
+        OUT='ten-one '
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD=\
+"valuesForMatchedSshHosts "\
+"'10.1.*:ten-one; user@10.*:user-ten' 'user@10.2.1.1' '10.1.1.1'"
+        OUT='user-ten ten-one '
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
