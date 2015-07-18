@@ -218,6 +218,18 @@ function testSpec_valname()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="valueForMatchedName -w 'book' 'b* = 1' 'bo*=2'"
+        OUT='2'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="valueForMatchedName -t -w '  book  ' 'b* = 1' 'bo*=2'"
+        OUT='1'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="valueForMatchedName -w -l 'book' 'b*=1' 'bo*=2' 'b?o*=3'"
         OUT='3'
         DESC="Example: ${CMD}"

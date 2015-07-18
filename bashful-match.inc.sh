@@ -180,8 +180,9 @@ function orderedBracketExpression()
 # function valueForMatchedName
 #
 # Accepts a name as the first argument, and any number of name/value pairs as
-# subsequent arguments, and returns the value of the name/value pair that
-# matches the specified name.  If no match is found, returns the status code 1.
+# subsequent arguments, and returns the value of the first name/value pair
+# that matches the specified name.  If no match is found, returns the status
+# code 1.
 #
 # -l optionally returns the value of the last name/value pair that matches the
 #    specified name.  By default, the value of the first name/value pair that
@@ -191,6 +192,9 @@ function orderedBracketExpression()
 #    occurrence of an input delimiter within a name/value pair will be used to
 #    split the name and value.  All subsequent occurrences will be considered
 #    part of the value.  Defaults to '='.  An error is returned if null.
+#
+# -t optionally trims leading and trailing whitespace from the name, and each
+#    name and value in name/value pairs.
 #
 # -v optionally treats arguments without an input delimiter as a value with a
 #    null name.  By default, such entries are treated as a name with a null
@@ -207,6 +211,12 @@ function orderedBracketExpression()
 # $ valueForMatchedName -w 'book' 'b*=1' 'bo*=2' 'b?o*=3'
 # 1
 #
+# $ valueForMatchedName -w 'book' 'b* = 1' 'bo*=2'
+# 2
+#
+# $ valueForMatchedName -t -w '  book  ' 'b* = 1' 'bo*=2'
+# 1
+#
 # $ valueForMatchedName -w -l 'book' 'b*=1' 'bo*=2' 'b?o*=3'
 # 3
 #
@@ -220,13 +230,14 @@ function valueForMatchedName()
     local DELIM='='
     declare -i REPORT_LAST_MATCH=0
     declare -i SINGLE_IS_VALUE=0
+    declare -i TRIM_TEXT=0
     declare -i WILDCARD_MATCHES=0
 
     # Parse function options.
     declare -i OPTIND
     local OPT=''
 
-    while getopts ":d:lvw" OPT
+    while getopts ":d:lvtw" OPT
     do
         case "${OPT}" in
         d)
@@ -235,6 +246,9 @@ function valueForMatchedName()
             ;;
         l)
             let REPORT_LAST_MATCH=1
+            ;;
+        t)
+            let TRIM_TEXT=1
             ;;
         v)
             let SINGLE_IS_VALUE=1
@@ -251,6 +265,12 @@ function valueForMatchedName()
 
     local NAME="${1-}"
     shift ||:
+
+    [[ ${TRIM_TEXT} -eq 0 ]] || {
+
+        NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+        NAME="${NAME%"${NAME##*[![:space:]]}"}"
+    }
 
     declare -i FOUND_MATCH=0
     local MATCH=''
@@ -289,6 +309,15 @@ function valueForMatchedName()
             VALUE="${PAIR_STR:$(( ${#PATTERN} + 1 ))}"
             ;;
         esac
+
+        [[ ${TRIM_TEXT} -eq 0 ]] || {
+
+            PATTERN="${PATTERN#"${PATTERN%%[![:space:]]*}"}"
+            PATTERN="${PATTERN%"${PATTERN##*[![:space:]]}"}"
+
+            VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
+            VALUE="${VALUE%"${VALUE##*[![:space:]]}"}"
+        }
 
         declare -i IS_MATCHING=0
 
