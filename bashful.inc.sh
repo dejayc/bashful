@@ -5,8 +5,11 @@
 # Bashful is licensed under the 2-Clause BSD License:
 #     http://opensource.org/licenses/BSD-2-Clause
 
-# Requires:
-#   No other bashful components are required.
+# Verify caller context.
+[[ "${BASH_ARGV}" != '' ]] || {
+    echo "ERROR: ${BASH_SOURCE[0]##*/} must be sourced, not executed"
+    exit 1
+} >&2
 
 # Initialize global variables.
 {
@@ -97,4 +100,36 @@ function stdout()
     local LINE
     IFS='' read -r -d '' LINE
     echo -n "${LINE}"
+}
+
+# Accepts a Bashful module name and a list of module dependencies, and
+# generates an error and non-zero status code if one or more dependencies are
+# not already loaded.
+function verifyModules()
+{
+    local MODULE="${1?'INTERNAL ERROR: Module not specified'}"
+    shift
+
+    declare -a MISSING=()
+
+    while [ $# -gt 0 ]
+    do
+        local DEPENDENCY="${1}"
+        shift
+
+        [[ -n "${DEPENDENCY}" ]] || continue
+
+        isVariableSet "BASHFUL_LOADED_${DEPENDENCY}" && continue
+        MISSING[${#MISSING[@]}]="${DEPENDENCY}"
+    done
+
+    if [ ${#MISSING[@]} -gt 0 ]
+    then
+        {
+            echo "ERROR: Aborting loading of Bashful module '${MODULE}'"
+            printf "Required Bashful module '%s' is not loaded\n" \
+                "${MISSING[@]}"
+        } | stderr
+        return 1
+    fi
 }

@@ -5,30 +5,35 @@
 # Bashful is licensed under the 2-Clause BSD License:
 #     http://opensource.org/licenses/BSD-2-Clause
 
-# Initialize the namespace presence indicator, and verify dependencies.
+# Declare the module name and dependencies.
+declare BASHFUL_MODULE='ssh_spec'
+declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
+
+# Verify execution context and module dependencies, and register the module.
 {
-    declare BASHFUL_MODULE_SSH_SPEC='bashful-ssh-spec.inc.sh'
+    declare BASHFUL_MODULE_VAR="BASHFUL_LOADED_${BASHFUL_MODULE}"
+    [[ -z "${!BASHFUL_MODULE_VAR-}" ]] || return 0
 
-    if [ -z "${BASHFUL_MODULE_LIST-}" ]
-    then
-        echo "Aborting loading of '${BASHFUL_MODULE_SSH_SPEC}':"
-        echo "Dependency 'bashful-list.inc.sh' is not loaded"
-        exit 2
-    fi >&2
+    # Ensure the module is sourced, not executed, generating an error
+    # otherwise.
+    [[ "${BASH_ARGV}" != '' ]] || {
+        echo "ERROR: ${BASH_SOURCE[0]##*/} must be sourced, not executed"
+        exit 1
+    } >&2
 
-    if [ -z "${BASHFUL_MODULE_SEQ-}" ]
-    then
-        echo "Aborting loading of '${BASHFUL_MODULE_SSH_SPEC}':"
-        echo "Dependency 'bashful-seq.inc.sh' is not loaded"
-        exit 2
-    fi >&2
+    # Ensure Bashful is loaded.
+    [[ -n "${BASHFUL_VERSION}" ]] || {
+        echo "ERROR: Aborting loading of Bashful module '${BASHFUL_MODULE}'"
+        echo "Dependency 'bashful.inc.sh' is not loaded"
+        [[ "${BASH_ARGV}" != '' ]] || exit 2; return 2;
+    } >&2
 
-    if [ -z "${BASHFUL_MODULE_MATCH-}" ]
-    then
-        echo "Aborting loading of '${BASHFUL_MODULE_SSH_SPEC}':"
-        echo "Dependency 'bashful-match.inc.sh' is not loaded"
-        exit 2
-    fi >&2
+    # Generate an error if required modules aren't already loaded.
+    verifyModules "${BASHFUL_MODULE}" "${BASHFUL_MODULE_DEPENDENCIES[@]-}" \
+        || return
+
+    # Register the module.
+    declare "${BASHFUL_MODULE_VAR}"="${BASHFUL_MODULE}"
 }
 
 # NOTE: Any occurrence of '&&:' and '||:' that appears following a command is
