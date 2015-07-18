@@ -11,14 +11,23 @@
     exit 1
 } >&2
 
+# Exit if Bashful was previously included.
+[[ -z "${BASHFUL_VERSION:-}" ]] || return 0
+
 # Initialize global variables.
 {
     # Bashful information.
     declare BASHFUL_VERSION='1.0'
 
     # Script information.
-    declare BASHFUL_PATH="${BASH_SOURCE[0]%/*}"
-    declare BASHFUL_PATH="$( cd "${BASHFUL_PATH}" && pwd )"
+    declare BASHFUL_PATH="${BASH_SOURCE[0]}"
+    if [[ "${BASHFUL_PATH}" =~ / ]]
+    then
+        BASHFUL_PATH="$( cd "${BASHFUL_PATH%/*}" && pwd )"
+    else
+        BASHFUL_PATH="$( pwd )"
+    fi
+
     declare SCRIPT_INVOKED_NAME="${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}"
     declare SCRIPT_NAME="${SCRIPT_INVOKED_NAME##*/}"
     declare SCRIPT_INVOKED_PATH="$( dirname "${SCRIPT_INVOKED_NAME}" )"
