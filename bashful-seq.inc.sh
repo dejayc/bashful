@@ -115,6 +115,9 @@ function intSeq()
 
     declare -a RESULTS=()
 
+    # The following variable just makes regexes easier to read.
+    local WS='[[:space:]]*'
+
     while [ $# -gt 0 ]
     do
         local ARG="${1}"
@@ -131,9 +134,8 @@ function intSeq()
             continue
         }
 
-        [[ "${ARG}" =~ ^[[:space:]]*([0-9]+)[[:space:]]*$ ]] || \
-        [[ "${ARG}" =~ \
-^[[:space:]]*([0-9]+)[[:space:]]*-[[:space:]]*([0-9]+)[[:space:]]*$ ]] || \
+        [[ "${ARG}" =~ ^${WS}([0-9]+)${WS}$ ]] || \
+        [[ "${ARG}" =~ ^${WS}([0-9]+)${WS}-${WS}([0-9]+)${WS}$ ]] || \
             return 1
 
         local FROM_STR="${BASH_REMATCH[1]-}"
