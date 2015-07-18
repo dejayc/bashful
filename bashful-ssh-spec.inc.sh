@@ -444,8 +444,15 @@ function valueForMatchedSshHost()
 # hosts; and returns a series of parameter values mapped to the first SSH host
 # descriptor that matched each host.
 #
-# SSH host descriptors are separated from their corresponding values by a
-# colon ':' character.
+# Each value is quoted, in a way that protects spaces, quotes, and other
+# special characters from being misinterpreted by the shell.  This format is
+# useful for assigning the output of this function to an array, via the
+# following construct:
+#
+#    declare -a ARRAY="( `valuesForMatchedSshHosts ...` )"
+#
+# In the arguments passed to this function, SSH host descriptors are separated
+# from their corresponding values by a colon ':' character.
 #
 # SSH host descriptors may contain wildcards.  Question mark '?' is a
 # wildcard that matches exactly one occurrence of any character.  Asterisk '*'
