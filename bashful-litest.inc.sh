@@ -181,10 +181,10 @@ function executeLitest()
 
         [[ -r "${TEST_SCRIPT}" ]] || {
 
-            echo "ERROR: Unable to include required script" >&2
-            echo "SCRIPT: '${TEST_SCRIPT}'" >&2
+            echo "ERROR: Unable to include required script"
+            echo "SCRIPT: '${TEST_SCRIPT}'"
             return 1
-        }
+        } >&2
 
         echo 'Including required script:'
         echo "  '${TEST_SCRIPT}'"
@@ -419,7 +419,7 @@ function _executeTestCase()
 "Status ${STATUS} did not match expected status ${EXPECTED_STATUS}"
             echo
         else
-            cat \
+            _stderr \
 <<ERROR_MSG
 The following output:
 
@@ -555,12 +555,9 @@ function _executeTestSpecForTestCase()
     eval "${SPEC_FN}" "${TEST_CASE}" || {
 
         declare -i STATUS=${?}
-
-        echo \
-"ERROR: '${SPEC_FN} ${TEST_CASE}' returned an error status code" >&2
-
+        echo "ERROR: '${SPEC_FN} ${TEST_CASE}' returned an error status code"
         return ${STATUS}
-    }
+    } >&2
 }
 
 function _getAllTestCasesForTest()
@@ -574,9 +571,9 @@ function _getAllTestCasesForTest()
     TEST_CASES_LIST="$( eval "${SPEC_FN}" all )" || {
 
         declare -i STATUS=${?}
-        echo "ERROR: '${SPEC_FN} all' returned an error status code" >&2
+        echo "ERROR: '${SPEC_FN} all' returned an error status code"
         return ${STATUS}
-    }
+    } >&2
 
     echo -n "${TEST_CASES_LIST}"
 }
@@ -589,9 +586,9 @@ function _getAllTestNames()
     TEST_NAMES_LIST="$( testSpecs_all ${SUPPRESS_HIDDEN} )" || {
 
         declare -i STATUS=${?}
-        echo "ERROR: '${SPEC_FN}' returned an error status code" >&2
+        echo "ERROR: '${SPEC_FN}' returned an error status code"
         return ${STATUS}
-    }
+    } >&2
 
     echo -n "${TEST_NAMES_LIST}"
 }
@@ -608,9 +605,9 @@ function _getTestSpecFn()
 
         declare -f -F "${SPEC_FN}" &> /dev/null || {
 
-            echo "ERROR: Unknown test '${TEST_NAME}'" >&2
+            echo "ERROR: Unknown test '${TEST_NAME}'"
             return 1
-        }
+        } >&2
     }
 
     echo -n "${SPEC_FN}"
@@ -839,6 +836,20 @@ USAGE_TEXT
 
     echo "${USAGE_SYNOPSIS}"
     echo "${USAGE_TEXT}"
+}
+
+function _stderr()
+{
+    declare -i ERR_CODE="${1-$(( ${?} > 0 ? ${?} : 2 ))}"
+    _stdout >&2
+    return ${ERR_CODE}
+}
+
+function _stdout()
+{
+    local LINE
+    IFS='' read -r -d '' LINE
+    echo -n "${LINE}"
 }
 
 function _verifyTestCases()
