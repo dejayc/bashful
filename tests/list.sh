@@ -250,8 +250,26 @@ function testSpec_translist()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="translatedList -t ' leading' ' both ' 'trailing '"
-        OUT='leading both trailing'
+        CMD="translatedList -l '[' '  leading' '  both  ' 'trailing  ' ']'"
+        OUT='[ leading both   trailing   ]'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="translatedList -t '[' '  leading' '  both  ' 'trailing  ' ']'"
+        OUT='[   leading   both trailing ]'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="translatedList -T '[' '  leading' '  both  ' 'trailing  ' ']'"
+        OUT='[ leading both trailing ]'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="translatedList -l -t '[' '  leading' '  both  ' 'trailing  ' ']'"
+        OUT='[ leading both trailing ]'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;

@@ -385,7 +385,7 @@ function permutedSshMap()
 
     if [ ${#SSH_HOST_PARAMS[@]} -gt 0 ]
     then
-        translatedList -n -u -q -t "${SSH_HOST_PARAMS[@]}"
+        translatedList -n -u -q -T "${SSH_HOST_PARAMS[@]}"
     fi
 }
 

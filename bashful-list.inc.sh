@@ -257,6 +257,8 @@ function splitList()
 # and/or outputting the list in reverse order, according to the flags
 # specified.
 #
+# -l optionally trims leading whitespace from each set item.
+#
 # -n optionally preserves null items.
 #
 # -q optionally escapes each item being output, in a way that protects spaces,
@@ -280,7 +282,9 @@ function splitList()
 # -S optionally appends an output separator at the end of the output.  By
 #    default, no output separator appears at the end of the output.
 #
-# -t optionally trim leading and tailing whitespace from each set item.
+# -t optionally trims trailing whitespace from each set item.
+#
+# -T optionally trims leading and trailing whitespace from each set item.
 #
 # -u optionally outputs only unique items, discarding duplicates from the
 #    output.
@@ -302,8 +306,17 @@ function splitList()
 # $ translatedList -s ';' -S a b a c b d a
 # a;b;a;c;b;d;a;
 #
-# $ translatedList -t ' leading' ' both ' 'trailing '
-# leading both trailing
+# $ translatedList -l '[' '  leading' '  both  ' 'trailing  ' ']'
+# [ leading both   trailing   ]
+#
+# $ translatedList -t '[' '  leading' '  both  ' 'trailing  ' ']'
+# [   leading   both trailing ]
+#
+# $ translatedList -T '[' '  leading' '  both  ' 'trailing  ' ']'
+# [ leading both trailing ]
+#
+# $ translatedList -l -t '[' '  leading' '  both  ' 'trailing  ' ']'
+# [ leading both trailing ]
 #
 # $ translatedList -s ',' 1 2 '' 4 '' 5
 # 1,2,4,5
@@ -323,7 +336,8 @@ function translatedList()
 {
     local SEP=' '
     declare -i IS_REVERSED=0
-    declare -i IS_TRIMMED=0
+    declare -i IS_LEAD_TRIMMED=0
+    declare -i IS_TRAIL_TRIMMED=0
     declare -i IS_UNIQUE=0
     declare -i PRESERVE_NULL_ITEMS=0
     local FLAG_QUOTED=''
@@ -333,11 +347,14 @@ function translatedList()
     declare -i OPTIND
     local OPT=''
 
-    while getopts ':nqrs:Stu' OPT
+    while getopts ':lnqrs:StTu' OPT
     do
         case "${OPT}" in
         d)
             DELIM="${OPTARG}"
+            ;;
+        l)
+            let IS_LEAD_TRIMMED=1
             ;;
         n)
             let PRESERVE_NULL_ITEMS=1
@@ -355,7 +372,11 @@ function translatedList()
             FLAG_TRAILING_SEP="-${OPT}"
             ;;
         t)
-            let IS_TRIMMED=1
+            let IS_TRAIL_TRIMMED=1
+            ;;
+        T)
+            let IS_LEAD_TRIMMED=1
+            let IS_TRAIL_TRIMMED=1
             ;;
         u)
             let IS_UNIQUE=1
@@ -386,9 +407,13 @@ function translatedList()
         local SET_MEMBER="${!I}"
         let I+=INC
 
-        [[ ${IS_TRIMMED} -eq 0 ]] || {
+        [[ ${IS_LEAD_TRIMMED} -eq 0 ]] || {
 
             SET_MEMBER="${SET_MEMBER#"${SET_MEMBER%%[![:space:]]*}"}"
+        }
+
+        [[ ${IS_TRAIL_TRIMMED} -eq 0 ]] || {
+
             SET_MEMBER="${SET_MEMBER%"${SET_MEMBER##*[![:space:]]}"}"
         }
 
