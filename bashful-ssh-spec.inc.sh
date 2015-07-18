@@ -65,7 +65,7 @@ declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
 # destination SSH host.  These values are determined by the arguments passed
 # to this function, described below.
 #
-# Each value is quoted, in a way that protects spaces, quotes, and other
+# Each value is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
 # useful for assigning the output of this function to an array, via the
 # following construct:
@@ -242,7 +242,7 @@ valuesForMatchedSshHosts -d ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 # Returns a list of mappings, where each mapping consists of an SSH host
 # mapped to some relevant parameter.
 #
-# Each mapping is quoted, in a way that protects spaces, quotes, and other
+# Each mapping is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
 # useful for assigning the output of this function to an array, via the
 # following construct:
@@ -444,7 +444,7 @@ function valueForMatchedSshHost()
 # hosts; and returns a series of parameter values mapped to the first SSH host
 # descriptor that matched each host.
 #
-# Each value is quoted, in a way that protects spaces, quotes, and other
+# Each value is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
 # useful for assigning the output of this function to an array, via the
 # following construct:

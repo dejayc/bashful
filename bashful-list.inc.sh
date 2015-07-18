@@ -30,7 +30,7 @@ declare BASHFUL_MODULE='list'
 # by the specified output separator.  The list of items is constructed from
 # each argument passed in to this function.
 #
-# -q optionally quotes each item being output, in a way that protects spaces,
+# -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
 #    shell.  Useful for assigning the output of this function to an array,
 #    via the following construct:
@@ -138,7 +138,7 @@ function joinedList()
 # function splitList:
 #
 # Splits one or more delimited lists, and outputs a list in which each item is
-# quoted in a way that protects spaces, quotes, and other special characters
+# escaped in a way that protects spaces, quotes, and other special characters
 # from being misinterpreted by the shell.  Useful for assigning the output of
 # this function to an array, via the following construct:
 #
@@ -259,7 +259,7 @@ function splitList()
 #
 # -n optionally preserves null items.
 #
-# -q optionally quotes each item being output, in a way that protects spaces,
+# -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
 #    shell.  Useful for assigning the output of this function to an array,
 #    via the following construct:

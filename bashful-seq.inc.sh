@@ -200,7 +200,7 @@ function intSeq()
 #    split the name and value.  All subsequent occurrences will be considered
 #    part of the value.  Defaults to '='.  An error is returned if null.
 #
-# -q optionally quotes each item being output, in a way that protects spaces,
+# -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
 #    shell.  Useful for assigning the output of this function to an array,
 #    via the following construct:
@@ -553,7 +553,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
 #    entirely null permutations within the output.  By default, null values
 #    are discarded.
 #
-# -q optionally quotes each item being output, in a way that protects spaces,
+# -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
 #    shell.  Useful for assigning the output of this function to an array,
 #    via the following construct:
@@ -836,7 +836,7 @@ translatedList ${FLAG_UNIQUE} ${FLAG_PRESERVE_NULL_ITEMS} \
 #    entirely null permutations within the output.  By default, null values
 #    are discarded.
 #
-# -q optionally quotes each item being output, in a way that protects spaces,
+# -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
 #    shell.  Useful for assigning the output of this function to an array,
 #    via the following construct:
