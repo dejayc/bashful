@@ -7,7 +7,7 @@
 
 # Declare the module name and dependencies.
 declare BASHFUL_MODULE='ssh_spec'
-declare BASHFUL_MODULE_DEPENDENCIES='list seq match'
+declare BASHFUL_MODULE_DEPENDENCIES='list match seq'
 
 # Verify execution context and module dependencies, and register the module.
 {
