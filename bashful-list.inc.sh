@@ -7,6 +7,7 @@
 
 # Declare the module name.
 declare BASHFUL_MODULE='list'
+declare BASHFUL_MODULE_DEPENDENCIES='text'
 
 # Verify execution context and module dependencies, and register the module.
 {
@@ -20,8 +21,9 @@ declare BASHFUL_MODULE='list'
         exit 1
     } >&2
 
-    # Register the module.
+    # Register the module and dependencies.
     declare "${BASHFUL_MODULE_VAR}"="${BASHFUL_MODULE}"
+    declare "BASHFUL_DEPS_${BASHFUL_MODULE}"="${BASHFUL_MODULE_DEPENDENCIES}"
 }
 
 # function joinedList:
