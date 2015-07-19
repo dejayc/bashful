@@ -48,6 +48,12 @@ function testSpec_parspec()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="parsedSshSpecs ' 10.1.1.1 : /ftp ;'"
+        OUT="10.1.1.1 /ftp '' '' '' "
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD=\
 "parsedSshSpecs 'user@10.[1,2].1.1: /ftp;' 'user@10.*: /home/cert;'"
         OUT=\
@@ -117,7 +123,7 @@ function testSpec_permap()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
-        CMD="permutedSshMap '[www,app][1-3] : /ftp ;'"
+        CMD="permutedSshMap ' [www,app][1-3] : /ftp ;'"
         OUT='www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
