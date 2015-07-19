@@ -82,6 +82,12 @@ function isFunction()
     [[ -n "${FUNCTION_NAME}" ]] && declare -f "${FUNCTION_NAME}" > /dev/null
 }
 
+function isModuleLoaded()
+{
+    local MODULE="${1-}"
+    [[ -z "${MODULE}" ]] || isVariableSet "BASHFUL_LOADED_${MODULE}"
+}
+
 function isScriptInteractive()
 {
     [[ "${-}" =~ 'i' ]]
@@ -148,7 +154,7 @@ function verifyBashfulDependencies()
             local DEP="${DEPS[J]}"
             let J++ ||:
 
-            isVariableSet "BASHFUL_LOADED_${DEP}" || {
+            isModuleLoaded "${DEP}" || {
 
                 let MODULE_MISSING=1
                 echo \
