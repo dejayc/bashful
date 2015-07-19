@@ -278,21 +278,25 @@ function testSpecs_all()
     declare -i SUPPRESS_HIDDEN="${1-}"
 
     local FN_DECL_LIST="$( compgen -A function )"
-    local TEST_NAME_LIST=''
+    declare -a FN_DECLS=()
 
-    while read -r TEST_SPEC
+    while [[ "${FN_DECL_LIST}" =~ \
+(^|[[:space:]])testSpec_([^[:space:]]+)(.*)$ ]]
     do
-        local TEST_NAME="${TEST_SPEC#testSpec_}"
+        local TEST_NAME="${BASH_REMATCH[2]}"
+        FN_DECL_LIST="${BASH_REMATCH[3]}"
 
-        [[ "${TEST_NAME}" == "${TEST_SPEC}" ]] && continue
-        [[ "${TEST_NAME:0:1}" != '_' ||
-           "${SUPPRESS_HIDDEN}" -eq 0 ]] && {
+        [[ "${TEST_NAME:0:1}" != '_' || "${SUPPRESS_HIDDEN}" -eq 0 ]] && {
 
-            TEST_NAME_LIST="${TEST_NAME_LIST} ${TEST_NAME}"
+            FN_DECLS[${#FN_DECLS[@]}]="${TEST_NAME}"
         }
-    done <<< "${FN_DECL_LIST}"
+    done
 
-    echo "${TEST_NAME_LIST# }"
+    [[ ${#FN_DECLS[@]} -gt 0 ]] && {
+
+        printf -v FN_DECL_LIST '%s ' "${FN_DECLS[@]}"
+        echo -n "${FN_DECL_LIST% }"
+    } ||:
 }
 
 function _describeAllTestCases()
