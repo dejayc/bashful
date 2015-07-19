@@ -227,4 +227,5 @@ function testSpec_valhosts()
     let TEST_EXP_STATUS=${STAT}
     return 0
 }
+
 executeLitest "${@-}"

@@ -7,6 +7,7 @@
 
 # Declare the module name and dependencies.
 declare BASHFUL_MODULE='opts'
+declare BASHFUL_MODULE_DEPENDENCIES='bashful'
 
 # Verify execution context and module dependencies, and register the module.
 {
@@ -20,15 +21,9 @@ declare BASHFUL_MODULE='opts'
         exit 1
     } >&2
 
-    # Ensure Bashful is loaded.
-    [[ -n "${BASHFUL_VERSION}" ]] || {
-        echo "ERROR: Aborting loading of Bashful module '${BASHFUL_MODULE}'"
-        echo "Dependency 'bashful.inc.sh' is not loaded"
-        [[ "${BASH_ARGV}" != '' ]] || exit 2; return 2;
-    } >&2
-
-    # Register the module.
+    # Register the module and dependencies.
     declare "${BASHFUL_MODULE_VAR}"="${BASHFUL_MODULE}"
+    declare "BASHFUL_DEPS_${BASHFUL_MODULE}"="${BASHFUL_MODULE_DEPENDENCIES}"
 }
 
 # Initialize global variables.

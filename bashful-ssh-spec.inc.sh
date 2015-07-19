@@ -7,7 +7,7 @@
 
 # Declare the module name and dependencies.
 declare BASHFUL_MODULE='ssh_spec'
-declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
+declare BASHFUL_MODULE_DEPENDENCIES='list seq match'
 
 # Verify execution context and module dependencies, and register the module.
 {
@@ -21,19 +21,9 @@ declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
         exit 1
     } >&2
 
-    # Ensure Bashful is loaded.
-    [[ -n "${BASHFUL_VERSION}" ]] || {
-        echo "ERROR: Aborting loading of Bashful module '${BASHFUL_MODULE}'"
-        echo "Dependency 'bashful.inc.sh' is not loaded"
-        [[ "${BASH_ARGV}" != '' ]] || exit 2; return 2;
-    } >&2
-
-    # Generate an error if required modules aren't already loaded.
-    verifyModules "${BASHFUL_MODULE}" "${BASHFUL_MODULE_DEPENDENCIES[@]-}" \
-        || return
-
-    # Register the module.
+    # Register the module and dependencies.
     declare "${BASHFUL_MODULE_VAR}"="${BASHFUL_MODULE}"
+    declare "BASHFUL_DEPS_${BASHFUL_MODULE}"="${BASHFUL_MODULE_DEPENDENCIES}"
 }
 
 # NOTE: Any occurrence of '&&:' and '||:' that appears following a command is

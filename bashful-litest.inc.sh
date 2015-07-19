@@ -201,6 +201,11 @@ function executeLitest()
         fi
     done
 
+    [[ ${TEST_SCRIPT_COUNT} -gt 0 ]] && {
+
+        verifyBashfulDependencies || exit
+    }
+
     if [ "${TEST_NAME}" == 'all' ]
     then
         _executeAllTests \

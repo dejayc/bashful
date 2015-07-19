@@ -18,6 +18,7 @@
 {
     # Bashful information.
     declare BASHFUL_VERSION='1.0'
+    declare BASHFUL_LOADED_bashful='bashful'
 
     # Script information.
     declare BASHFUL_PATH="${BASH_SOURCE[0]}"
@@ -111,34 +112,50 @@ function stdout()
     echo -n "${LINE}"
 }
 
-# Accepts a Bashful module name and a list of module dependencies, and
-# generates an error and non-zero status code if one or more dependencies are
-# not already loaded.
-function verifyModules()
+# Verifies that all required module dependencies are loaded, or generates an
+# error otherwise.
+function verifyBashfulDependencies()
 {
-    local MODULE="${1?'INTERNAL ERROR: Module not specified'}"
-    shift
+    local VAR_LIST="$( compgen -v )"
+    declare -a MODULES=()
 
-    declare -a MISSING=()
-
-    while [ $# -gt 0 ]
+    while [[ "${VAR_LIST}" =~ \
+(^|[[:space:]])BASHFUL_LOADED_([^[:space:]]+)(.*)$ ]]
     do
-        local DEPENDENCY="${1}"
-        shift
-
-        [[ -n "${DEPENDENCY}" ]] || continue
-
-        isVariableSet "BASHFUL_LOADED_${DEPENDENCY}" && continue
-        MISSING[${#MISSING[@]}]="${DEPENDENCY}"
+        MODULES[${#MODULES[@]}]="${BASH_REMATCH[2]}"
+        VAR_LIST="${BASH_REMATCH[3]}"
     done
 
-    if [ ${#MISSING[@]} -gt 0 ]
-    then
-        {
-            echo "ERROR: Aborting loading of Bashful module '${MODULE}'"
-            printf "Required Bashful module '%s' is not loaded\n" \
-                "${MISSING[@]}"
-        } | stderr
-        return 1
-    fi
+    declare -i MODULE_LEN=${#MODULES[@]}
+    declare -i I=0
+    declare -i MODULE_MISSING=0
+
+    while [ ${I} -lt ${MODULE_LEN} ]
+    do
+        local MODULE="${MODULES[I]}"
+        let I++ ||:
+
+        local DEPS_VAR="BASHFUL_DEPS_${MODULE}"
+        isVariableSet "${DEPS_VAR}" || continue
+
+        unset DEPS
+        declare -a DEPS="( ${!DEPS_VAR} )"
+        declare -i DEPS_LEN=${#DEPS[@]}
+        declare -i J=0
+
+        while [ ${J} -lt ${DEPS_LEN} ]
+        do
+            local DEP="${DEPS[J]}"
+            let J++ ||:
+
+            isVariableSet "BASHFUL_LOADED_${DEP}" || {
+
+                let MODULE_MISSING=1
+                echo \
+"Bashful module '${MODULE}' requires missing module '${DEP}'" | stderr
+            }
+        done
+    done
+
+    return ${MODULE_MISSING}
 }
