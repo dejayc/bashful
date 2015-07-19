@@ -123,10 +123,7 @@ function joinedList()
             shift
         done
 
-        if [ $# -gt 0 ]
-        then
-            printf "${FORMAT_STR}" "${1}"
-        fi
+        [[ $# -gt 0 ]] && printf "${FORMAT_STR}" "${1}"
 
         # If the final argument is null, append an extra separator, to be
         # consistent with the logic of splitList.
@@ -261,7 +258,7 @@ function splitList()
                     [[ -n "${ARG}" ]] || break
 
                     [[ "${ARG}" =~ \
-^([^${DELIM_REGEX}]*)([${DELIM_REGEX}]?)(.*)$ ]]
+^([^${DELIM_REGEX}]*)([${DELIM_REGEX}]?)(.*)$ ]] &&:
 
                     local PREFIX="${BASH_REMATCH[1]}"
                     local INFIX="${BASH_REMATCH[2]}"
@@ -278,10 +275,7 @@ function splitList()
                     ARG="${SUFFIX}"
                 done
 
-                [[ -n "${LAST_PREFIX}" ]] && {
-
-                    SET[${#SET[@]}]="${LAST_PREFIX}"
-                }
+                [[ -n "${LAST_PREFIX}" ]] && SET[${#SET[@]}]="${LAST_PREFIX}"
             else
                 [[ ${TRIM_TRAIL_NL} -eq 0 ]] || {
 
@@ -481,15 +475,11 @@ function translatedList()
         local SET_MEMBER="${!I}"
         let I+=INC
 
-        [[ ${IS_LEAD_TRIMMED} -eq 0 ]] || {
-
+        [[ ${IS_LEAD_TRIMMED} -eq 0 ]] || \
             SET_MEMBER="${SET_MEMBER#"${SET_MEMBER%%[![:space:]]*}"}"
-        }
 
-        [[ ${IS_TRAIL_TRIMMED} -eq 0 ]] || {
-
+        [[ ${IS_TRAIL_TRIMMED} -eq 0 ]] || \
             SET_MEMBER="${SET_MEMBER%"${SET_MEMBER##*[![:space:]]}"}"
-        }
 
         [[ -n "${SET_MEMBER}" || ${PRESERVE_NULL_ITEMS} -ne 0 ]] \
             || continue

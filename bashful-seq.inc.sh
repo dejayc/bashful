@@ -116,11 +116,7 @@ function intSeq()
         # Handle empty sequences appropriately.
         [[ "${ARG}" =~ [^[:space:]] ]] || {
 
-            [[ ${PRESERVE_NULL_ITEMS} -ne 0 ]] && {
-
-                RESULTS[${#RESULTS[@]}]=''
-            }
-
+            [[ ${PRESERVE_NULL_ITEMS} -ne 0 ]] && RESULTS[${#RESULTS[@]}]=''
             continue
         }
 
@@ -678,10 +674,7 @@ function permutedSeq()
     # Verify that opening and closing delimiters do not contain '-'.
     [[ "${OPEN_DELIM}" =~ - || "${CLOSE_DELIM}" =~ - ]] && return 1
 
-    [[ ${PRESERVE_NULL_ITEMS} -eq 0 ]] || {
-
-        FLAG_PRESERVE_NULL_ITEMS='-n'
-    }
+    [[ ${PRESERVE_NULL_ITEMS} -eq 0 ]] || FLAG_PRESERVE_NULL_ITEMS='-n'
 
     local PERM_SPLIT="${OPEN_DELIM:0:1}"
     local PERM_SETS=''
@@ -707,10 +700,8 @@ function permutedSeq()
             REMAINING="${REMAINING:$(( ${#NONSEQUENCE} ))}"
 
             # If the non-sequence text exists, save it to the set of permuters.
-            [[ -n "${NONSEQUENCE}" ]] && {
-
+            [[ -n "${NONSEQUENCE}" ]] && \
                 PERM_SET[${#PERM_SET[@]}]="${NONSEQUENCE}"
-            }
 
             # Exit the loop if no text remains to be analyzed.
             [[ -n "${REMAINING}" ]] || break;

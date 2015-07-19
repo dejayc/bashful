@@ -201,10 +201,7 @@ function executeLitest()
         fi
     done
 
-    [[ ${TEST_SCRIPT_COUNT} -gt 0 ]] && {
-
-        verifyBashfulDependencies || exit
-    }
+    [[ ${TEST_SCRIPT_COUNT} -gt 0 ]] && verifyBashfulDependencies || exit
 
     if [ "${TEST_NAME}" == 'all' ]
     then
@@ -286,10 +283,8 @@ function testSpecs_all()
         local TEST_NAME="${BASH_REMATCH[2]}"
         FN_DECL_LIST="${BASH_REMATCH[3]}"
 
-        [[ "${TEST_NAME:0:1}" != '_' || "${SUPPRESS_HIDDEN}" -eq 0 ]] && {
-
+        [[ "${TEST_NAME:0:1}" != '_' || "${SUPPRESS_HIDDEN}" -eq 0 ]] && \
             FN_DECLS[${#FN_DECLS[@]}]="${TEST_NAME}"
-        }
     done
 
     [[ ${#FN_DECLS[@]} -gt 0 ]] && {
@@ -380,10 +375,8 @@ function _executeTestCase()
 
     if [ -n "${TEST_DESC}" ]
     then
-        [[ -n "${TEST_CMD}" && "${TEST_CMD}" != "${TEST_DESC}" ]] && {
-
+        [[ -n "${TEST_CMD}" && "${TEST_CMD}" != "${TEST_DESC}" ]] && \
             printf -v TEST_DESC '%b\n  %b' "${TEST_DESC}" "${TEST_CMD}"
-        }
     else
         TEST_DESC="${TEST_CMD}"
     fi

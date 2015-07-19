@@ -84,11 +84,9 @@ function processScriptOptions()
 
         declare -i OPT_SPEC_COUNT=${#OPT_SPEC_NAMES[@]}
 
-        [[ ${OPT_SPEC_COUNT} -gt 0 ]] && {
-
+        [[ ${OPT_SPEC_COUNT} -gt 0 ]] && \
             OPT_SPEC_INDEX="$( \
                 indexOf "${OPT_SPEC_NAME}" "${OPT_SPEC_NAMES[@]}" )"
-        }
 
         [[ "${OPT_SPEC_INDEX}" != '' ]] || {
 
