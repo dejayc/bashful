@@ -415,26 +415,54 @@ function permutedSshMap()
 # user.  This allows SSH host descriptors to match if they only contain a
 # domain, and not SSH user.
 #
+# -d optionally specifies one or more delimiter characters, used to separate
+#    SSH host descriptors from their corresponding values.  Defaults to ':'.
+#    An error is returned if null.
+#
 # Examples:
 #
-# $ valueForMatchedSshHost 'user@10.1.1.1 10.1.*:ten-one'
+# $ valueForMatchedSshHost 'user@10.1.1.1' '10.1.*:ten-one'
 # ten-one
 #
-# $ valueForMatchedSshHost user@10.2.1.1 '10.1.*:ten-one' 'user@10.*:user-ten'
+# $ valueForMatchedSshHost -d '=' 'user@10.1.1.1' '10.1.*=ten-one'
+# ten-one
+#
+# $ valueForMatchedSshHost 'user@10.2.1.1' \
+#   '10.1.*:ten-one' 'user@10.*:user-ten'
 # user-ten
 #
-# $ valueForMatchedSshHost user@10.2.1.1 \
+# $ valueForMatchedSshHost 'user@10.2.1.1' \
 #   ' 10.1.* : ten-one ' ' user@10.* : user-ten '
 # user-ten
 function valueForMatchedSshHost()
 {
+    local DELIM=':'
+
+    # Parse function options.
+    declare -i OPTIND
+    local OPT=''
+
+    while getopts ":d:" OPT
+    do
+        case "${OPT}" in
+        d)
+            DELIM="${OPTARG}"
+            [[ -n "${DELIM}" ]] || return 1
+            ;;
+        *)
+            return 2
+        esac
+    done
+    shift $(( OPTIND - 1 ))
+    # Done parsing function options.
+
     local SSH_HOST="${1-}"
 
     [[ -n "${SSH_HOST}" ]] || return 0
     shift
 
     local VALUE="$( \
-valueForMatchedName -d ':' -w -t "${SSH_HOST}" "${@}" )" ||:
+valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST}" "${@}" )" ||:
 
     # If no matching value was found for the SSH host, and the SSH host has an
     # SSH user included, remove the SSH user and try again, in order to detect
@@ -442,7 +470,7 @@ valueForMatchedName -d ':' -w -t "${SSH_HOST}" "${@}" )" ||:
     if [[ -z "${VALUE}" && "${SSH_HOST}" =~ @ ]]
     then
         VALUE="$( \
-valueForMatchedName -d ':' -w -t "${SSH_HOST##*@}" "${@}" )" ||:
+valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST##*@}" "${@}" )" ||:
     fi
 
     echo -n "${VALUE}"
