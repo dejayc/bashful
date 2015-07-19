@@ -20,6 +20,7 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
 # Define script dependencies, loaded prior to test execution.
 {
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-list.inc.sh" )
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-text.inc.sh" )
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-match.inc.sh" )
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-seq.inc.sh" )
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-ssh-spec.inc.sh" )

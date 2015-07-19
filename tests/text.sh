@@ -28,6 +28,50 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
 # 'set -e' is active.
 
 
+function testSpec_escEre()
+{
+    TEST_CASE="${1-}"
+
+    local DESC=''
+    local CMD=''
+    local OUT=''
+    declare -i STAT=0
+    declare -i I=1
+
+    case "${TEST_CASE}" in
+    $(( I++ )) )
+        CMD="escapedExtendedRegex 'Hello? I need \$5 (please)'"
+        OUT='Hello\? I need \$5 \(please\)'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        DESC='No arguments'
+        CMD='escapedExtendedRegex'
+        OUT=''
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        DESC='All special characters'
+        CMD="escapedExtendedRegex '\\.?*+{}-^\$|()'"
+        OUT='\\\.\?\*\+\{\}\-\^\$\|\(\)'
+        let STAT=0 &&:
+        ;;
+    all)
+        _iterateTo ${I}
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+
+    TEST_DESC="${DESC}"
+    TEST_CMD="${CMD}"
+    TEST_EXP_OUTPUT="${OUT}"
+    let TEST_EXP_STATUS=${STAT}
+    return 0
+}
+
 function testSpec_ltrim()
 {
     TEST_CASE="${1-}"
@@ -73,6 +117,56 @@ function testSpec_ltrim()
         CMD="printf '['; trimmedLeading '  embedded ws  '; printf ']'"
         OUT='[embedded ws  ]'
         DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    all)
+        _iterateTo ${I}
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+
+    TEST_DESC="${DESC}"
+    TEST_CMD="${CMD}"
+    TEST_EXP_OUTPUT="${OUT}"
+    let TEST_EXP_STATUS=${STAT}
+    return 0
+}
+
+function testSpec_ordBe()
+{
+    TEST_CASE="${1-}"
+
+    local DESC=''
+    local CMD=''
+    local OUT=''
+    declare -i STAT=0
+    declare -i I=1
+
+    case "${TEST_CASE}" in
+    $(( I++ )) )
+        CMD="orderedBracketExpression ',;[(\-)]'"
+        OUT='],;[(\\)-'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="orderedBracketExpression ',;--,--;--'"
+        OUT=',;-'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="orderedBracketExpression ',;--,]--;--'"
+        OUT='],;-'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        DESC='No args'
+        CMD="orderedBracketExpression"
+        OUT=''
         let STAT=0 &&:
         ;;
     all)

@@ -24,6 +24,110 @@ declare BASHFUL_MODULE='text'
     declare "${BASHFUL_MODULE_VAR}"="${BASHFUL_MODULE}"
 }
 
+# function escapedExtendedRegex
+#
+# Returns an escaped representation of the passed string, with each character
+# preceded by a backslash if the character is a special POSIX extended regular
+# expression character.  Special characters are '\', '.', '?', '*', '+', '{',
+# '}', '-', '^', '$', '|', '(', and ')'.
+#
+# Examples:
+#
+# $ escapedExtendedRegex 'Hello? I need $5 (please)'
+# Hello\? I need \$5 \(please\)
+function escapedExtendedRegex()
+{
+    local REGEX="${1-}"
+
+    # These following variables exist to prevent various bash shell versions,
+    # and even syntax highlighting in different text editors, from becoming
+    # confused due to discrepancies in how they handle backslash escaping.
+    local RB='}'
+    local LP='('
+
+    # Replace all the special characters wth their escaped counterparts.
+    REGEX="${REGEX//[\\]/\\\\}"
+    REGEX="${REGEX//[.]/\\.}"
+    REGEX="${REGEX//[?]/\\?}"
+    REGEX="${REGEX//[*]/\\*}"
+    REGEX="${REGEX//[+]/\\+}"
+    REGEX="${REGEX//[{]/\\{}"
+    REGEX="${REGEX//[\}]/\\${RB}}"
+    REGEX="${REGEX//[-]/\\-}"
+    REGEX="${REGEX//[\^]/\\^}"
+    REGEX="${REGEX//[\$]/\\\$}"
+    REGEX="${REGEX//[|]/\\|}"
+    REGEX="${REGEX//[\(]/\\${LP}}"
+    REGEX="${REGEX//[\)]/\\)}"
+    echo -n "${REGEX}"
+}
+
+# function orderedBracketExpression
+#
+# Returns an ordered POSIX bracket expression for the passed argument,
+# ensuring that within the bracket expression, right-bracket ']' appears
+# first, if it appears, and dash '-' appears last, if it appears.  All
+# other symbols will remain in their present order, and all duplicate symbols
+# are discarded.  Backslash '\' will be escaped with another backslash,
+# appearing as '\\'.
+#
+# Note that this function is only meant to reorder bracket expressions that
+# do not contain character classes, collating symbols, or character ranges.
+#
+# When using unsanitized variables to dynamically specify the matching
+# characters within the POSIX bracket expression of a regular expression,
+# guaranteeing the proper order of special characters within the bracket
+# expression can help eliminate errors related to the matching process.
+#
+# Examples:
+#
+# $ orderedBracketExpression ',;[(\-)]'
+# ],;[(\\)-
+#
+# $ orderedBracketExpression ',;--,--;--'
+# ,;-
+#
+# $ orderedBracketExpression ',;--,]--;--'
+# ],;-
+function orderedBracketExpression()
+{
+    local EXPR="${1-}"
+
+    declare -i HAS_DASH=0
+    declare -i HAS_RIGHT_BRACKET=0
+    local ORDERED=''
+
+    [[ "${EXPR}" =~ []] ]] && {
+
+        let HAS_RIGHT_BRACKET=1
+        EXPR="${EXPR//]/}"
+    }
+
+    [[ "${EXPR}" =~ - ]] && {
+
+        let HAS_DASH=1
+        EXPR="${EXPR//-/}"
+    }
+
+    local UNIQUE="${EXPR}"
+    EXPR=''
+
+    while [ -n "${UNIQUE}" ]
+    do
+        local CHAR="${UNIQUE:0:1}"
+        [[ "${CHAR}" == '\' ]] && CHAR='\\'
+        EXPR="${EXPR}${CHAR}"
+        UNIQUE="${UNIQUE//${CHAR}/}"
+    done
+
+    [[ ${HAS_RIGHT_BRACKET} -eq 0 ]] || echo -n ']'
+
+    echo -n "${EXPR}"
+
+    [[ ${HAS_DASH} -eq 0 ]] || echo -n '-'
+    true # true prevents 'set -e' from aborting
+}
+
 # function trimmed:
 #
 # Returns the argument passed into this function, with leading and trailing
