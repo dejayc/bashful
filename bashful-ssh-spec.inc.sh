@@ -86,11 +86,6 @@ declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
 # the SSH host; for example, it can contain an SCP destination path, a shell
 # command to execute on the SSH host, a TCP port number, etc.
 #
-# Note that if 'ssh-param' needs to contain a semicolon ';' character, a list
-# delimiter other than semicolon can be specified with the '-d' switch.
-# Specifying a delimiter in this way affects only this argument, and not the
-# others, which always use semicolon as a delimiter.
-#
 # 'ssh-host' may contain permutation sequences, as defined by function
 # 'permutedSeq' in 'bashful-seq'.  Such permutations will be permuted and
 # combined with 'ssh-user' and 'ssh-param' to form a map of multiple SSH
@@ -135,12 +130,6 @@ declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
 # contain permutation sequences.  Any whitespace around names or values is
 # trimmed.
 #
-# -D optionally specifies one or more delimiter characters, used to separate
-#    map entries from each other within the first map, which maps SSH host
-#    descriptors to custom parameters.  All other map arguments will use
-#    semicolon ';' as the delimiter.  Defaults to ';'.  An error is returned
-#    if null, or if it contains '[', ']', or '-' characters.
-#
 # Examples:
 #
 # $ parsedSshSpecs '10.1.1.1: /ftp;'
@@ -159,40 +148,14 @@ declare -a BASHFUL_MODULE_DEPENDENCIES=( 'list' 'seq' 'match' )
 #   '10.3.*: /home/jump; *: /home/cert;' '10.2.*: 10.3.1.1;'
 # user@10.1.1.1 /ftp /home/cert '' '' \
 # user@10.2.1.1 /ftp /home/cert 10.3.1.1 /home/jump
-#
-# $ parsedSshSpecs -D ',' 'example.com: uname -a; ls -al;,' \
-#   'www.example.com: uname -a; whoami;'
-# example.com uname\ -a\;\ ls\ -al\; '' '' '' \
-# www.example.com uname\ -a\;\ whoami\; '' '' ''
 function parsedSshSpecs()
 {
-    local DELIM=';'
-
-    # Parse function options.
-    declare -i OPTIND
-    local OPT=''
-
-    while getopts ":D:" OPT
-    do
-        case "${OPT}" in
-        D)
-            DELIM="${OPTARG}"
-            [[ -z "${DELIM}" || "${DELIM}" =~ [][-] ]] && return 1
-            ;;
-        *)
-            return 2
-        esac
-    done
-    shift $(( OPTIND - 1 ))
-    # Done parsing function options.
-
     local PARAMS_DMAP="${1-}"
     local CERTS_DMAP="${2-}"
     local JUMP_HOSTS_DMAP="${3-}"
 
     local PARAMS_LIST
-    PARAMS_LIST="$( permutedSshMap -D "${DELIM}" "${PARAMS_DMAP}" )" \
-        || return
+    PARAMS_LIST="$( permutedSshMap "${PARAMS_DMAP}" )" || return
     declare -a PARAMS="( ${PARAMS_LIST} )" || return
     declare -i PARAMS_LEN=${#PARAMS[@]}
     [[ ${PARAMS_LEN} -gt 0 ]] || return 0
@@ -212,18 +175,18 @@ function parsedSshSpecs()
 
     local CERTS_LIST=''
     CERTS_LIST="$( \
-valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${HOSTS[@]}" )" || return
+valuesForMatchedSshHosts "${CERTS_DMAP}" "${HOSTS[@]}" )" || return
     declare -a CERTS="( ${CERTS_LIST} )" || return
 
     local JUMP_HOSTS_LIST=''
     JUMP_HOSTS_LIST="$( \
-valuesForMatchedSshHosts -D ';' "${JUMP_HOSTS_DMAP}" "${HOSTS[@]}" )" \
+valuesForMatchedSshHosts "${JUMP_HOSTS_DMAP}" "${HOSTS[@]}" )" \
         || return
     declare -a JUMP_HOSTS="( ${JUMP_HOSTS_LIST} )" || return
 
     local JUMP_HOSTS_CERTS_LIST=''
     JUMP_HOSTS_CERTS_LIST="$( \
-valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
+valuesForMatchedSshHosts "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
         || return
     declare -a JUMP_HOSTS_CERTS="( ${JUMP_HOSTS_CERTS_LIST} )" || return
 
@@ -240,7 +203,8 @@ valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 # function permutedSshMap:
 #
 # Returns a map, where each map entry consists of an SSH host descriptor
-# mapped to some relevant parameter.
+# mapped to some relevant parameter.  The relevant parameter must not contain
+# the semi-colon ';' character, which is used as the map delimiter.
 #
 # Each map entry is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
@@ -250,9 +214,8 @@ valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 #    declare -a ARRAY="( `permutedSshMap ...` )"
 #
 # The data passed to this function consists of a delimited map of SSH host
-# descriptors mapped to some relevant parameter.  By default, entries in the
-# map are separated by semicolon ';' character, and adhere to the following
-# format:
+# descriptors mapped to some relevant parameter.  Entries in the map are
+# separated by semicolon ';' character, and adhere to the following format:
 #
 #   ssh-user@ssh-host:ssh-param
 #
@@ -260,9 +223,6 @@ valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 # optional, and can be used to specify an important parameter associated with
 # the SSH host; for example, it can contain an SCP destination path, a shell
 # command to execute on the SSH host, a TCP port number, etc.
-#
-# Note that if 'ssh-param' needs to contain a semicolon ';' character, a map
-# delimiter other than semicolon can be specified with the '-D' switch.
 #
 # 'ssh-host' may contain permutation sequences, as defined by function
 # 'permutedSeq' in 'bashful-seq'.  Such permutations will be permuted and
@@ -278,10 +238,6 @@ valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 #
 # Any whitespace around names or values is trimmed.
 #
-# -D optionally specifies one or more delimiter characters, used to separate
-#    SSH host map entries from each other.  Defaults to ';'.  An error is
-#    returned if null, or if it contains '[', ']', or '-' characters.
-#
 # Examples:
 #
 # $ permutedSshMap '[www,app][1-3]: /ftp;'
@@ -289,36 +245,13 @@ valuesForMatchedSshHosts -D ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 #
 # $ permutedSshMap '[www,app][1-3] : /ftp ;'
 # www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp
-#
-# $ permutedSshMap -D ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'
-# www1:uname\ -a\;\ ls\ -al\; www2:uname\ -a\;\ ls\ -al\; www:uname\ -a
 function permutedSshMap()
 {
-    local DELIM=';'
-
-    # Parse function options.
-    declare -i OPTIND
-    local OPT=''
-
-    while getopts ":D:" OPT
-    do
-        case "${OPT}" in
-        D)
-            DELIM="${OPTARG}"
-            [[ -z "${DELIM}" || "${DELIM}" =~ [][-] ]] && return 1
-            ;;
-        *)
-            return 2
-        esac
-    done
-    shift $(( OPTIND - 1 ))
-    # Done parsing function options.
-
     local ENTRIES_DMAP="${1-}"
     [[ -n "${ENTRIES_DMAP}" ]] || return 0
 
     local ENTRIES_LIST
-    ENTRIES_LIST="$( splitList -d "${DELIM}" "${ENTRIES_DMAP}" )" || return
+    ENTRIES_LIST="$( splitList -d ';' "${ENTRIES_DMAP}" )" || return
     [[ -n "${ENTRIES_LIST}" ]] || return
 
     declare -a SSH_HOST_PARAMS=()
@@ -416,16 +349,9 @@ function permutedSshMap()
 # user.  This allows SSH host descriptors to match if they only contain a
 # domain, and not SSH user.
 #
-# -d optionally specifies one or more delimiter characters, used to separate
-#    SSH host descriptors from their corresponding values.  Defaults to ':'.
-#    An error is returned if null.
-#
 # Examples:
 #
 # $ valueForMatchedSshHost 'user@10.1.1.1' '10.1.*:ten-one'
-# ten-one
-#
-# $ valueForMatchedSshHost -d '=' 'user@10.1.1.1' '10.1.*=ten-one'
 # ten-one
 #
 # $ valueForMatchedSshHost 'user@10.2.1.1' \
@@ -437,33 +363,13 @@ function permutedSshMap()
 # user-ten
 function valueForMatchedSshHost()
 {
-    local DELIM=':'
-
-    # Parse function options.
-    declare -i OPTIND
-    local OPT=''
-
-    while getopts ":d:" OPT
-    do
-        case "${OPT}" in
-        d)
-            DELIM="${OPTARG}"
-            [[ -n "${DELIM}" ]] || return 1
-            ;;
-        *)
-            return 2
-        esac
-    done
-    shift $(( OPTIND - 1 ))
-    # Done parsing function options.
-
     local SSH_HOST="${1-}"
 
     [[ -n "${SSH_HOST}" ]] || return 0
     shift
 
     local VALUE="$( \
-valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST}" "${@}" )" ||:
+valueForMatchedName -d ':' -w -t "${SSH_HOST}" "${@}" )" ||:
 
     # If no matching value was found for the SSH host, and the SSH host has an
     # SSH user included, remove the SSH user and try again, in order to detect
@@ -471,7 +377,7 @@ valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST}" "${@}" )" ||:
     if [[ -z "${VALUE}" && "${SSH_HOST}" =~ @ ]]
     then
         VALUE="$( \
-valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST##*@}" "${@}" )" ||:
+valueForMatchedName -d ':' -w -t "${SSH_HOST##*@}" "${@}" )" ||:
     fi
 
     echo -n "${VALUE}"
@@ -505,10 +411,6 @@ valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST##*@}" "${@}" )" ||:
 # user.  This allows SSH host descriptors to match if they only contain a
 # domain, and not SSH user.
 #
-# -D optionally specifies one or more delimiter characters, used to separate
-#    SSH host map entries from each other.  Defaults to ';'.  An error is
-#    returned if null, or if it contains '[', ']', or '-' characters.
-#
 # Examples:
 #
 # $ valuesForMatchedSshHosts '10.1.*:ten-one' 'user@10.1.1.1'
@@ -518,35 +420,11 @@ valueForMatchedName -d "${DELIM}" -w -t "${SSH_HOST##*@}" "${@}" )" ||:
 #   '10.1.*:ten-one; user@10.*:user-ten' 'user@10.2.1.1' '10.1.1.1'
 # user-ten ten-one
 #
-# $ valuesForMatchedSshHosts -D ',' \
-#   '10.1.*:ten-one, user@10.*:user-ten,' 'user@10.2.1.1' '10.1.1.1'
-# user-ten ten-one
-#
 # $ valuesForMatchedSshHosts \
 #   ' 10.1.* : ten-one ; user@10.* : user-ten' 'user@10.2.1.1' '10.1.1.1'
 # user-ten ten-one
 function valuesForMatchedSshHosts()
 {
-    local DELIM=';'
-
-    # Parse function options.
-    declare -i OPTIND
-    local OPT=''
-
-    while getopts ":D:" OPT
-    do
-        case "${OPT}" in
-        D)
-            DELIM="${OPTARG}"
-            [[ -z "${DELIM}" || "${DELIM}" =~ [][-] ]] && return 1
-            ;;
-        *)
-            return 2
-        esac
-    done
-    shift $(( OPTIND - 1 ))
-    # Done parsing function options.
-
     local PARAMS_DMAP="${1-}"
     shift
 
@@ -556,8 +434,7 @@ function valuesForMatchedSshHosts()
 
     if [ -n "${PARAMS_DMAP}" ]
     then
-        PARAMS_LIST="$( permutedSshMap -D "${DELIM}" "${PARAMS_DMAP}" )" \
-            || return
+        PARAMS_LIST="$( permutedSshMap "${PARAMS_DMAP}" )" || return
 
         if [ -n "${PARAMS_LIST}" ]
         then

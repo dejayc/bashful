@@ -80,16 +80,6 @@ function testSpec_parspec()
        DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
-    $(( I++ )) )
-        CMD=\
-"parsedSshSpecs -D ',' "\
-"'example.com: uname -a; ls -al;, www.example.com: uname -a; whoami;'"
-        OUT=\
-"example.com uname\ -a\;\ ls\ -al\; '' '' '' "\
-"www.example.com uname\ -a\;\ whoami\; '' '' '' "
-        DESC="Example: ${CMD}"
-        let STAT=0 &&:
-        ;;
     all)
         _iterateTo ${I}
         ;;
@@ -128,14 +118,6 @@ function testSpec_permap()
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
-    $(( I++ )) )
-        CMD=\
-"permutedSshMap -D ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'"
-        OUT=\
-'www1:uname\ -a\;\ ls\ -al\; www2:uname\ -a\;\ ls\ -al\; www:uname\ -a'
-        DESC="Example: ${CMD}"
-        let STAT=0 &&:
-        ;;
     all)
         _iterateTo ${I}
         ;;
@@ -164,12 +146,6 @@ function testSpec_valhost()
     case "${TEST_CASE}" in
     $(( I++ )) )
         CMD="valueForMatchedSshHost 'user@10.1.1.1' '10.1.*:ten-one'"
-        OUT='ten-one'
-        DESC="Example: ${CMD}"
-        let STAT=0 &&:
-        ;;
-    $(( I++ )) )
-        CMD="valueForMatchedSshHost -d '=' 'user@10.1.1.1' '10.1.*=ten-one'"
         OUT='ten-one'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
@@ -225,14 +201,6 @@ function testSpec_valhosts()
         CMD=\
 "valuesForMatchedSshHosts "\
 "'10.1.*:ten-one; user@10.*:user-ten' 'user@10.2.1.1' '10.1.1.1'"
-        OUT='user-ten ten-one '
-        DESC="Example: ${CMD}"
-        let STAT=0 &&:
-        ;;
-    $(( I++ )) )
-        CMD=\
-"valuesForMatchedSshHosts -D ',' "\
-"'10.1.*:ten-one, user@10.*:user-ten,' 'user@10.2.1.1' '10.1.1.1'"
         OUT='user-ten ten-one '
         DESC="Example: ${CMD}"
         let STAT=0 &&:
