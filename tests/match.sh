@@ -156,8 +156,8 @@ function testSpec_ordBe()
 
     case "${TEST_CASE}" in
     $(( I++ )) )
-        CMD="orderedBracketExpression ',;[(-)]'"
-        OUT='],;[()-'
+        CMD="orderedBracketExpression ',;[(\-)]'"
+        OUT='],;[(\\)-'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;

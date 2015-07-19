@@ -119,7 +119,8 @@ function ifWildcardMatches()
 # ensuring that within the bracket expression, right-bracket ']' appears
 # first, if it appears, and dash '-' appears last, if it appears.  All
 # other symbols will remain in their present order, and all duplicate symbols
-# are discarded.
+# are discarded.  Backslash '\' will be escaped with another backslash,
+# appearing as '\\'.
 #
 # Note that this function is only meant to reorder bracket expressions that
 # do not contain character classes, collating symbols, or character ranges.
@@ -131,8 +132,8 @@ function ifWildcardMatches()
 #
 # Examples:
 #
-# $ orderedBracketExpression ',;[(-)]'
-# ],;[()-
+# $ orderedBracketExpression ',;[(\-)]'
+# ],;[(\\)-
 #
 # $ orderedBracketExpression ',;--,--;--'
 # ,;-
@@ -147,7 +148,7 @@ function orderedBracketExpression()
     declare -i HAS_RIGHT_BRACKET=0
     local ORDERED=''
 
-    [[ "${EXPR}" =~ ] ]] && {
+    [[ "${EXPR}" =~ []] ]] && {
 
         let HAS_RIGHT_BRACKET=1
         EXPR="${EXPR//]/}"
@@ -165,6 +166,7 @@ function orderedBracketExpression()
     while [ -n "${UNIQUE}" ]
     do
         local CHAR="${UNIQUE:0:1}"
+        [[ "${CHAR}" == '\' ]] && CHAR='\\'
         EXPR="${EXPR}${CHAR}"
         UNIQUE="${UNIQUE//${CHAR}/}"
     done
