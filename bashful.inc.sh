@@ -39,22 +39,13 @@
     declare -i SCRIPT_DEBUG_LEVEL=0
 }
 
-# If debugging is enabled, output the specified text to STDERR.
-function ifDebug_stderr()
-{
-    declare -i STATUS_CODE="${2-${?}}"
-    local REQUIRED_DEBUG_LEVEL="${1-1}"
-
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && \
-        stderr ${STATUS_CODE}
-}
-
-# If debugging is enabled, output the specified text to STDOUT.
-function ifDebug_stdout()
+# Returns true if the current debugging level is greater than or equal to the
+# specified debugging level.
+function ifDebug()
 {
     local REQUIRED_DEBUG_LEVEL="${1-1}"
 
-    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && stdout
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]]
 }
 
 function indexOf()
@@ -111,11 +102,29 @@ function stderr()
     return ${ERR_CODE}
 }
 
+# If debugging is enabled, output the specified text to STDERR.
+function stderr_ifDebug()
+{
+    declare -i STATUS_CODE="${2-${?}}"
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
+
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && \
+        stderr ${STATUS_CODE}
+}
+
 function stdout()
 {
     local LINE
     IFS='' read -r -d '' LINE
     echo -n "${LINE}"
+}
+
+# If debugging is enabled, output the specified text to STDOUT.
+function stdout_ifDebug()
+{
+    local REQUIRED_DEBUG_LEVEL="${1-1}"
+
+    [[ "${SCRIPT_DEBUG_LEVEL-0}" -ge ${REQUIRED_DEBUG_LEVEL} ]] && stdout
 }
 
 # Verifies that all required module dependencies are loaded, or generates an
