@@ -164,6 +164,14 @@ function testSpec_valhost()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD=\
+"valueForMatchedSshHost 'user@10.2.1.1' "\
+"' 10.1.* : ten-one ' ' user@10.* : user-ten '"
+        OUT='user-ten'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD=""
         OUT=""
         DESC="Example: ${CMD}"
@@ -205,6 +213,14 @@ function testSpec_valhosts()
         CMD=\
 "valuesForMatchedSshHosts "\
 "'10.1.*:ten-one; user@10.*:user-ten' 'user@10.2.1.1' '10.1.1.1'"
+        OUT='user-ten ten-one '
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD=\
+"valuesForMatchedSshHosts "\
+"' 10.1.* : ten-one ; user@10.* : user-ten ' 'user@10.2.1.1' '10.1.1.1'"
         OUT='user-ten ten-one '
         DESC="Example: ${CMD}"
         let STAT=0 &&:

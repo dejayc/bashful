@@ -399,7 +399,8 @@ function permutedSshMap()
 # descriptors and arbitrary values.
 #
 # SSH host descriptors are separated from their corresponding values by a
-# colon ':' character.
+# colon ':' character.  Whitespace is trimmed from SSH host descriptors and
+# their values.
 #
 # SSH host descriptors may contain wildcards.  Question mark '?' is a
 # wildcard that matches exactly one occurrence of any character.  Asterisk '*'
@@ -417,6 +418,10 @@ function permutedSshMap()
 #
 # $ valueForMatchedSshHost user@10.2.1.1 '10.1.*:ten-one' 'user@10.*:user-ten'
 # user-ten
+#
+# $ valueForMatchedSshHost user@10.2.1.1 \
+#   ' 10.1.* : ten-one ' ' user@10.* : user-ten '
+# user-ten
 function valueForMatchedSshHost()
 {
     local SSH_HOST="${1-}"
@@ -424,14 +429,16 @@ function valueForMatchedSshHost()
     [[ -n "${SSH_HOST}" ]] || return 0
     shift
 
-    local VALUE="$( valueForMatchedName -d ':' -w "${SSH_HOST}" "${@}" )" ||:
+    local VALUE="$( \
+valueForMatchedName -d ':' -w -t "${SSH_HOST}" "${@}" )" ||:
 
     # If no matching value was found for the SSH host, and the SSH host has an
     # SSH user included, remove the SSH user and try again, in order to detect
     # matches with parameters that specify SSH hosts with no SSH user.
     if [[ -z "${VALUE}" && "${SSH_HOST}" =~ @ ]]
     then
-        VALUE="$( valueForMatchedName -d ':' -w "${SSH_HOST##*@}" "${@}" )" ||:
+        VALUE="$( \
+valueForMatchedName -d ':' -w -t "${SSH_HOST##*@}" "${@}" )" ||:
     fi
 
     echo -n "${VALUE}"
@@ -441,8 +448,8 @@ function valueForMatchedSshHost()
 #
 # Accepts as the first argument a delimited map of SSH host descriptors mapped
 # to parameter values; and as a series of subsequent arguments, a list of SSH
-# hosts; and returns a series of parameter values mapped to the first SSH host
-# descriptor that matched each host.
+# hosts; and for each SSH host in the list, returns the parameter value that is
+# mapped to teh first SSH host descriptor that matched the host.
 #
 # Each value is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
@@ -452,7 +459,11 @@ function valueForMatchedSshHost()
 #    declare -a ARRAY="( `valuesForMatchedSshHosts ...` )"
 #
 # In the arguments passed to this function, SSH host descriptors are separated
-# from their corresponding values by a colon ':' character.
+# from their corresponding values by the colon ':' character.  Whitespace is
+# trimmed from the SSH host descriptors and their values.
+#
+# SSH host descriptors are separated from each other via the semi-colon ';'
+# character.
 #
 # SSH host descriptors may contain wildcards.  Question mark '?' is a
 # wildcard that matches exactly one occurrence of any character.  Asterisk '*'
@@ -470,6 +481,10 @@ function valueForMatchedSshHost()
 #
 # $ valuesForMatchedSshHosts \
 #   '10.1.*:ten-one; user@10.*:user-ten' 'user@10.2.1.1' '10.1.1.1'
+# user-ten ten-one
+#
+# $ valuesForMatchedSshHosts \
+#   ' 10.1.* : ten-one ; user@10.* : user-ten' 'user@10.2.1.1' '10.1.1.1'
 # user-ten ten-one
 function valuesForMatchedSshHosts()
 {
