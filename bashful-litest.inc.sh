@@ -272,12 +272,12 @@ function testSpecs_all()
 {
     declare -i SUPPRESS_HIDDEN="${1-}"
 
-    local FN_DECL_LIST="$( declare -f -F )"
+    local FN_DECL_LIST="$( compgen -A function )"
     local TEST_NAME_LIST=''
 
     while read -r TEST_SPEC
     do
-        local TEST_NAME="${TEST_SPEC#declare -f testSpec_}"
+        local TEST_NAME="${TEST_SPEC#testSpec_}"
 
         [[ "${TEST_NAME}" == "${TEST_SPEC}" ]] && continue
         [[ "${TEST_NAME:0:1}" != '_' ||
