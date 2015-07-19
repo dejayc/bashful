@@ -198,7 +198,8 @@ function intSeq()
 # -d optionally specifies one or more value delimiter characters.  The first
 #    occurrence of an input delimiter within a name/value pair will be used to
 #    split the name and value.  All subsequent occurrences will be considered
-#    part of the value.  Defaults to '='.  An error is returned if null.
+#    part of the value.  Defaults to '='.  An error is returned if null, or if
+#    it contains '[', ']', or '-' characters.
 #
 # -q optionally escapes each item being output, in a way that protects spaces,
 #    quotes, and other special characters from being misinterpreted by the
