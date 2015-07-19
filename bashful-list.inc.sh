@@ -149,6 +149,12 @@ function joinedList()
 # -d optionally specifies one or more input delimiter characters.  Defaults to
 #    $IFS.  If null, splits every string into an array of characters.
 #
+# -e optionally protects instances of escaped delimeter characters.  For
+#    example, if delimter ';' is specified, and an instance of ';' must appear
+#    within a list element without being interpreted as a delimiter, that
+#    character may be represented as '\;' without being interpreted as a
+#    delimeter, if '-e' is specified.
+#
 # Examples:
 #
 # $ splitList -d ',' 'a,b' ',c'
@@ -169,6 +175,15 @@ function joinedList()
 # splitList -d ',' 'a,b,,' ',c'
 # a b '' '' c
 #
+# $ splitList -d ',' 'a,b\,' ',c'
+# a b\\ '' c
+#
+# $ splitList -d ',' -e 'a,b\,' ',c'
+# a b, '' c
+#
+# $ splitList -d ',' -e 'a\,b,'
+# a\, b
+#
 # $ splitList -d ',' 'hello,there' 'my "friend"'
 # hello there my\ \"friend\"
 #
@@ -177,16 +192,20 @@ function joinedList()
 function splitList()
 {
     local DELIM="${IFS}"
+    declare -i PROTECT_ESCAPED_DELIMS=0
 
     # Parse function options.
     declare -i OPTIND
     local OPT=''
 
-    while getopts ":d:" OPT
+    while getopts ":d:e" OPT
     do
         case "${OPT}" in
         d)
             DELIM="${OPTARG}"
+            ;;
+        e)
+            let PROTECT_ESCAPED_DELIMS=1
             ;;
         *)
             return 2
@@ -200,10 +219,27 @@ function splitList()
     declare -i TRIM_TRAIL_NL=0
     [[ "${DELIM}" =~ $'\n' ]] || let TRIM_TRAIL_NL=1
 
+    local DELIM_REGEX=''
+    [[ ${PROTECT_ESCAPED_DELIMS} -ne 0 ]] && {
+
+        if [ -n "${DELIM}" ]
+        then
+            DELIM_REGEX="$( orderedBracketExpression "${DELIM}" )" || return
+        else
+            let PROTECT_ESCAPED_DELIMS=0 ||:
+        fi
+    }
+
     while [ $# -gt 0 ]
     do
         local ARG="${1}"
         shift
+
+        [[ -n "${ARG}" ]] || {
+
+            printf '%q ' ''
+            continue
+        }
 
         unset SET
         declare -a SET=()
@@ -213,15 +249,51 @@ function splitList()
 
         if [ -n "${DELIM}" ]
         then
-            [[ ${TRIM_TRAIL_NL} -eq 0 ]] || {
+            if [ ${PROTECT_ESCAPED_DELIMS} -ne 0 ]
+            then
+                unset SET
+                declare -a SET=()
 
-                # Remove the trailing delimiter, if present, because otherwise
-                # an empty array element will be created in the 'read' command
-                # below, thanks to the newline appended by the here-string.
-                ARG="${ARG%["${DELIM}"]}"
-            }
+                local LAST_PREFIX=''
 
-            IFS="${DELIM}" read -r -d '' -a SET <<< "${ARG}"
+                while :
+                do
+                    [[ -n "${ARG}" ]] || break
+
+                    [[ "${ARG}" =~ \
+^([^${DELIM_REGEX}]*)([${DELIM_REGEX}]?)(.*)$ ]]
+
+                    local PREFIX="${BASH_REMATCH[1]}"
+                    local INFIX="${BASH_REMATCH[2]}"
+                    local SUFFIX="${BASH_REMATCH[3]}"
+
+                    if [[ -n "${INFIX}" && "${PREFIX:(-1)}" =~ [\\] ]]
+                    then
+                        LAST_PREFIX="${LAST_PREFIX}${PREFIX%?}${INFIX}"
+                    else
+                        SET[${#SET[@]}]="${LAST_PREFIX}${PREFIX}"
+                        LAST_PREFIX=''
+                    fi
+
+                    ARG="${SUFFIX}"
+                done
+
+                [[ -n "${LAST_PREFIX}" ]] && {
+
+                    SET[${#SET[@]}]="${LAST_PREFIX}"
+                }
+            else
+                [[ ${TRIM_TRAIL_NL} -eq 0 ]] || {
+
+                    # Remove the trailing delimiter, if present, because
+                    # otherwise an empty array element will be created in the
+                    # 'read' command below, thanks to the newline appended by
+                    # the here-string.
+                    ARG="${ARG%["${DELIM}"]}"
+                }
+
+                IFS="${DELIM}" read -r -d '' -a SET <<< "${ARG}"
+            fi
         else
             while IFS='' read -r -d '' -n 1 CHAR
             do

@@ -16,11 +16,13 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
 
 # Define script dependencies, loaded prior to test execution.
 {
+    TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-text.inc.sh" )
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-list.inc.sh" )
 }
 
 # Define global variables and constants.
 {
+    declare -r BS='\'
     declare -r NL=$'\n'
 }
 
@@ -182,6 +184,24 @@ function testSpec_splitlist()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="splitList -d ',' 'a,b\,' ',c'"
+        OUT="a b${BS}${BS} '' c"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' -e 'a,b${BS},' ',c'"
+        OUT="a b\, '' c"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' -e 'a${BS},b,'"
+        OUT="a\,b"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD="splitList -d ',' 'hello,there' 'my \"friend\"'"
         OUT='hello there my\ \"friend\"'
         DESC="Example: ${CMD}"
@@ -190,6 +210,31 @@ function testSpec_splitlist()
     $(( I++ )) )
         CMD="splitList -d '' 'hi there' 'bye'"
         OUT='h i \  t h e r e b y e'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' -e 'a,b,'"
+        OUT="a b"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ',' -e 'a,b,' ',c,d'"
+        OUT="a b '' c d"
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ';' -e "\
+"'uname -a${BS}; ls -al${BS};;pwd${BS}; echo hi${BS};;'"
+        OUT='uname\ -a\;\ ls\ -al\; pwd\;\ echo\ hi\;'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="splitList -d ';' -e '${BS};${BS};${BS};;${BS};${BS};${BS}a${BS}'"
+        OUT='\;\;\; \;\;\\a\\'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
