@@ -74,7 +74,10 @@ declare BASHFUL_MODULE_DEPENDENCIES='list seq match'
 # 'ssh-user@' is optional, but 'ssh-host' is required.  'ssh-param' is also
 # optional, and can be used to specify an important parameter associated with
 # the SSH host; for example, it can contain an SCP destination path, a shell
-# command to execute on the SSH host, a TCP port number, etc.
+# command to execute on the SSH host, a TCP port number, etc.  Since the
+# semi-colon ';' character is used to delimit the map of SSH hosts, any
+# literal semi-colon characters that must appear within 'ssh-param' must be
+# escaped by prefixing it with backslash '\', as '\;'.
 #
 # 'ssh-host' may contain permutation sequences, as defined by function
 # 'permutedSeq' in 'bashful-seq'.  Such permutations will be permuted and
@@ -193,8 +196,7 @@ valuesForMatchedSshHosts "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 # function permutedSshMap:
 #
 # Returns a map, where each map entry consists of an SSH host descriptor
-# mapped to some relevant parameter.  The relevant parameter must not contain
-# the semi-colon ';' character, which is used as the map delimiter.
+# mapped to some relevant parameter.
 #
 # Each map entry is escaped, in a way that protects spaces, quotes, and other
 # special characters from being misinterpreted by the shell.  This format is
@@ -204,10 +206,13 @@ valuesForMatchedSshHosts "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 #    declare -a ARRAY="( `permutedSshMap ...` )"
 #
 # The data passed to this function consists of a delimited map of SSH host
-# descriptors mapped to some relevant parameter.  Entries in the map are
-# separated by semicolon ';' character, and adhere to the following format:
+# descriptors mapped to some relevant parameter, in the following format:
 #
 #   ssh-user@ssh-host:ssh-param
+#
+# Entries in the map are separated by semicolon ';' character.  If 'ssh-param'
+# must contain semi-colons, the required semi-colons can be escaped by
+# prefixing them with the backslash '\' character, as '\;'.
 #
 # 'ssh-user@' is optional, but 'ssh-host' is required.  'ssh-param' is also
 # optional, and can be used to specify an important parameter associated with
@@ -235,13 +240,16 @@ valuesForMatchedSshHosts "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 #
 # $ permutedSshMap '[www,app][1-3] : /ftp ;'
 # www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp
+#
+# $ permutedSshMap 'host1: uname -a\; ls -al\;;host2: pwd\;;'
+# host1:uname\ -a\;\ ls\ -al\; host2:pwd\;
 function permutedSshMap()
 {
     local ENTRIES_DMAP="${1-}"
     [[ -n "${ENTRIES_DMAP}" ]] || return 0
 
     local ENTRIES_LIST
-    ENTRIES_LIST="$( splitList -d ';' "${ENTRIES_DMAP}" )" || return
+    ENTRIES_LIST="$( splitList -d ';' -e "${ENTRIES_DMAP}" )" || return
     [[ -n "${ENTRIES_LIST}" ]] || return
 
     declare -a SSH_HOST_PARAMS=()

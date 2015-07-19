@@ -26,6 +26,11 @@ source "${BASHFUL_PATH}/bashful-litest.inc.sh" || exit
     TEST_SCRIPTS+=( "${BASHFUL_PATH}/bashful-ssh-spec.inc.sh" )
 }
 
+# Define global variables and constants.
+{
+    declare -r BS='\'
+}
+
 # NOTE: Any occurrence of '&&:' in the source code is designed to preserve
 # the $? status of a command while preventing the script from aborting if
 # 'set -e' is active.
@@ -116,6 +121,13 @@ function testSpec_permap()
     $(( I++ )) )
         CMD="permutedSshMap ' [www,app][1-3] : /ftp ;'"
         OUT='www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
+        CMD="permutedSshMap "\
+"'host1: uname -a${BS}; ls -al${BS};;host2: pwd${BS};;'"
+        OUT='host1:uname\ -a\;\ ls\ -al\; host2:pwd\;'
         DESC="Example: ${CMD}"
         let STAT=0 &&:
         ;;
