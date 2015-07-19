@@ -117,6 +117,12 @@ function testSpec_permap()
         let STAT=0 &&:
         ;;
     $(( I++ )) )
+        CMD="permutedSshMap '[www,app][1-3] : /ftp ;'"
+        OUT='www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp'
+        DESC="Example: ${CMD}"
+        let STAT=0 &&:
+        ;;
+    $(( I++ )) )
         CMD=\
 "permutedSshMap -d ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'"
         OUT=\

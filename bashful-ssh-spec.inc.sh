@@ -286,6 +286,9 @@ valuesForMatchedSshHosts -d ';' "${CERTS_DMAP}" "${JUMP_HOSTS[@]}" )" \
 # $ permutedSshMap '[www,app][1-3]: /ftp;'
 # www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp
 #
+# $ permutedSshMap '[www,app][1-3] : /ftp ;'
+# www1:/ftp www2:/ftp www3:/ftp app1:/ftp app2:/ftp app3:/ftp
+#
 # $ permutedSshMap -d ',' 'www[1-2]: uname -a; ls -al;,www: uname -a,'
 # www1:uname\ -a\;\ ls\ -al\; www2:uname\ -a\;\ ls\ -al\; www:uname\ -a
 function permutedSshMap()
@@ -337,11 +340,12 @@ function permutedSshMap()
 
         [[ "${ENTRY}" =~ ^[[:space:]]*$ ]] && continue
 
-        [[ \
-"${ENTRY}" =~ ^${WS}((([^@]+)@)?([^@:]+))(${WS}:${WS}(.*)${WS})?$ ]] || return
+        [[ "${ENTRY}" =~ ^${WS}((([^@]+)@)?([^@:]+))(:${WS}(.*))?$ ]] \
+            || return
 
         local SSH_USER="${BASH_REMATCH[3]-}"
         local SSH_HOST="${BASH_REMATCH[4]-}"
+        SSH_HOST="${SSH_HOST%"${SSH_HOST##*[![:space:]]}"}"
         local SSH_PARAM="${BASH_REMATCH[6]-}"
 
         unset SSH_HOSTS
