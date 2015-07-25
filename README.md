@@ -7,17 +7,17 @@ Bashful "modules" are Bash scripts that can be included directly within a callin
 
 Module Name | Purpose
 ----------- | -------
-[`bashful`](./docs/api/bashful.md) | Provides functions to: track and determine whether Bashful modules have been loaded; inspect the state of variables and functions; write output to `STDOUT` and `STDERR`.  
+[`bashful`](./docs/api/bashful.md) | Provides functions to: track and determine whether Bashful modules have been loaded; inspect the state of variables and functions; write output to `STDOUT` and `STDERR`.
 [`error`](./docs/api/error.md) | Provides functions to generate error messages for common error scenarios.  
-[`list`](./docs/api/list.md) | Provides functions to join, split, and translate lists of strings.  
-[`litest`](./docs/api/litest.md) | Provides a framework to execute one or more unit tests for Bash script functions, reporting success and failure.  
-[`match`](./docs/api/match.md) | Provides functions to match wildcards within strings, and retrieve values for matching keys within a list of key/value pairs.  
+[`list`](./docs/api/list.md) | Provides functions to join, split, and translate lists of strings.
+[`litest`](./docs/api/litest.md) | Provides a framework to execute one or more unit tests or performance tests for Bash script functions, reporting success, failure, and timing.
+[`match`](./docs/api/match.md) | Provides functions to match wildcards within strings, and retrieve values for matching keys within a list of key/value pairs.
 [`opts`](./docs/api/opts.md) | Provides a framework to allow Bash scripts to support short and long command-line option switches, by executing callbacks when encountering switches.
-[`path`](./docs/api/path.md) | Provides functions to inspect and normalize filesystem paths.  
-[`sanitize`](./docs/api/sanitize.md) | Provides an additional layer of safety when executing Bash scripts, by: disabling aliases or functions whose name conflicts with built-in keywords; and enabling shell options that perform additional safety checks.  
-[`seq`](./docs/api/seq.md) | Provides functions to generate permutations of sequences and sets.  
+[`path`](./docs/api/path.md) | Provides functions to inspect and normalize filesystem paths.
+[`sanitize`](./docs/api/sanitize.md) | Provides an additional layer of safety when executing Bash scripts, by: disabling aliases or functions whose name conflicts with built-in keywords; and enabling shell options that perform additional safety checks.
+[`seq`](./docs/api/seq.md) | Provides functions to generate permutations of sequences and sets.
 [`ssh-spec`](./docs/api/ssh-spec.md) | Provides functions to parse an advanced syntax that describes SSH connections, and the possible certificates and jump servers they might use.
-[`text`](./docs/api/text.md) | Provides functions to trim and escape text representations.  
+[`text`](./docs/api/text.md) | Provides functions to trim and escape text representations.
 
 ## How to Load Modules
 
@@ -40,19 +40,19 @@ After loading [`bashful`](./docs/api/bashful.md), the following helpful variable
 
 Variable Name | Purpose
 ------------- | -------
-`BASHFUL_VERSION` | The Bashful version number
-`BASHFUL_PATH` | The path in which Bashful modules are located
-`SCRIPT_INVOKED_NAME` | The path and name of the calling script
-`SCRIPT_NAME` | The name of the calling script
-`SCRIPT_INVOKED_PATH` | The path of the calling script
-`SCRIPT_RUN_DATE` | The date and time at which the script included Bashful
-`SCRIPT_DEBUG_LEVEL` | A script debugging level variable that can be used to determine whether certain types of output get echoed to the TTY
+<a name='bashful_version'></a>`BASHFUL_VERSION` | The Bashful version number
+<a name='bashful_path'></a>`BASHFUL_PATH` | The path in which Bashful modules are located
+<a name='script_invoked_name'></a>`SCRIPT_INVOKED_NAME` | The path and name of the calling script
+<a name='script_name'></a>`SCRIPT_NAME` | The name of the calling script
+<a name='script_invoked_path'></a>`SCRIPT_INVOKED_PATH` | The path of the calling script
+<a name='script_run_date'></a>`SCRIPT_RUN_DATE` | The date and time at which the script included Bashful
+<a name='script_debug_level'></a>`SCRIPT_DEBUG_LEVEL` | A script debugging level variable that can be used to determine whether certain types of output get echoed to the TTY
 
 ### Conditionally Loading Modules
 
-It is a best practive to only load a Bashful module if it hasn't already been loaded.
+It is a best practice to only load a Bashful module if it hasn't already been loaded.  Nonetheless, each Bashful module checks to see if it has already been loaded, and if it has, returns out of the script without re-executing the logic within.
 
-To conditionally load [`bashful`](./docs/api/bashful.md), first check to see if the variable `BASHFUL_VERSION` is empty:
+To conditionally load [`bashful`](./docs/api/bashful.md), first check to see if the variable [`BASHFUL_VERSION`](#bashful_version) is empty:
 
 ```
 [[ -n "${BASHFUL_VERSION:-}" ]] || \
@@ -60,7 +60,7 @@ To conditionally load [`bashful`](./docs/api/bashful.md), first check to see if 
 
 ```
 
-Once [`bashful`](./docs/api/bashful.md) has been loaded, the function `isModuleLoaded` can be executed to verify whether a specific module has been loaded.  In the following example, the module [`opts`](./docs/api/opts.md) will be loaded conditionally :
+Once [`bashful`](./docs/api/bashful.md) has been loaded, the function [`isModuleLoaded`](./docs/api/bashful.md#ismoduleloaded) can be executed to verify whether a specific module has been loaded.  In the following example, the module [`opts`](./docs/api/opts.md) will be loaded conditionally :
 
 ```
 isModuleLoaded 'opts' || \
@@ -69,7 +69,7 @@ isModuleLoaded 'opts' || \
 
 ### Verifying Module Dependencies
 
-Bashful modules track dependencies so that calling scripts can fail themselves if required modules haven't been loaded.  To do so, execute the function `verifyBashfulDependencies`:
+Bashful modules track dependencies so that calling scripts can fail themselves if required modules haven't been loaded.  To do so, execute the function [`verifyBashfulDependencies`](./docs/api/bashful.md#verifybashfuldependencies):
 
 ```
 verifyBashfulDependencies || exit
@@ -98,28 +98,28 @@ Bashful comes with the following unit test scripts to verify the majority of fun
 
 Script Name | Purpose
 ----------- | -------
-[`tests/all.sh`](./docs/tests/all.md) | Executes every unit test script within Bashful
-[`tests/list.sh`](./docs/tests/list.md) | Executes unit test cases for the [`list`](./docs/api/list.md) module
-[`tests/match.sh`](./docs/tests/match.md) | Executes unit test cases for the [`match`](./docs/api/match.md) module
-[`tests/seq.sh`](./docs/tests/seq.md) | Executes unit test cases for the [`seq`](./docs/api/seq.md) module
-[`tests/sshs.sh`](./docs/tests/sshs.md) | Executes unit test cases for the [`ssh-spec`](./docs/api/ssh-spec.md) module
-[`tests/text.sh`](./docs/tests/text.md) | Executes unit test cases for the [`text`](./docs/api/text.md) module
+[`tests/all.sh`](./tests/all.sh) | Executes every unit test script within Bashful
+[`tests/list.sh`](./tests/list.sh) | Executes unit test cases for the [`list`](./docs/api/list.md) module
+[`tests/match.sh`](./tests/match.sh) | Executes unit test cases for the [`match`](./docs/api/match.md) module
+[`tests/seq.sh`](./tests/seq.sh) | Executes unit test cases for the [`seq`](./docs/api/seq.md) module
+[`tests/sshs.sh`](./tests/sshs.sh) | Executes unit test cases for the [`ssh-spec`](./docs/api/ssh-spec.md) module
+[`tests/text.sh`](./tests/text.sh) | Executes unit test cases for the [`text`](./docs/api/text.md) module
 
 ## Module Dependencies
 
 Module Name | Script | Requires | Required By
 ----------- | ------ | -------- | -----------
-[`bashful`](./docs/api/bashful.md) | [`bashful.inc.sh`](./bashful.inc.sh) | None | [`error`](./docs/api/error.md), [`opts`](./docs/api/opts.md)  
-[`error`](./docs/api/error.md) | [`bashful-error.inc.sh`](./bashful-error.inc.sh) | [`bashful`](./docs/api/bashful.md) | None  
-[`list`](./docs/api/list.md) | [`bashful-list.inc.sh`](./bashful-list.inc.sh) | [`text`](./docs/api/text.md), [`seq`](./docs/api/seq.md), [`ssh-spec`](./docs/api/ssh-spec.md) | [`match`](./docs/api/match.md)  
-[`litest`](./docs/api/litest.md) | [`bashful-litest.inc.sh`](./bashful-litest.inc.sh) | None | None  
-[`match`](./docs/api/match.md) | [`bashful-match.inc.sh`](./bashful-match.inc.sh) | [`list`](./docs/api/list.md), [`text`](./docs/api/text.md), [`ssh-spec`](./docs/api/ssh-spec.md) | None  
-[`opts`](./docs/api/opts.md) | [`bashful-opts.inc.sh`](./bashful-opts.inc.sh) | [`bashful`](./docs/api/bashful.md) | None  
-[`path`](./docs/api/path.md) | [`bashful-path.inc.sh`](./bashful-path.inc.sh) | None | None  
-[`sanitize`](./docs/api/sanitize.md) | [`bashful-sanitize.inc.sh`](./bashful-sanitize.inc.sh) | None | None  
-[`seq`](./docs/api/seq.md) | [`bashful-seq.inc.sh`](./bashful-seq.inc.sh) | [`list`](./docs/api/list.md) | [`ssh-spec`](./docs/api/ssh-spec.md)  
-[`ssh-spec`](./docs/api/ssh-spec.md) | [`bashful-ssh-spec.inc.sh`](./bashful-ssh-spec.inc.sh) | [`list`](./docs/api/list.md), [`match`](./docs/api/match.md), [`ssh-spec`](./docs/api/ssh-spec.md) | None  
-[`text`](./docs/api/text.md) | [`bashful-text.inc.sh`](./bashful-text.inc.sh) | None | [`list`](./docs/api/list.md), [`match`](./docs/api/match.md)  
+[`bashful`](./docs/api/bashful.md) | [`bashful.inc.sh`](./bashful.inc.sh) | None | [`error`](./docs/api/error.md), [`opts`](./docs/api/opts.md)
+[`error`](./docs/api/error.md) | [`bashful-error.inc.sh`](./bashful-error.inc.sh) | [`bashful`](./docs/api/bashful.md) | None
+[`list`](./docs/api/list.md) | [`bashful-list.inc.sh`](./bashful-list.inc.sh) | [`text`](./docs/api/text.md) | [`match`](./docs/api/match.md), [`seq`](./docs/api/seq.md), [`ssh-spec`](./docs/api/ssh-spec.md)
+[`litest`](./docs/api/litest.md) | [`bashful-litest.inc.sh`](./bashful-litest.inc.sh) | None | None
+[`match`](./docs/api/match.md) | [`bashful-match.inc.sh`](./bashful-match.inc.sh) | [`list`](./docs/api/list.md), [`text`](./docs/api/text.md) | [`ssh-spec`](./docs/api/ssh-spec.md)
+[`opts`](./docs/api/opts.md) | [`bashful-opts.inc.sh`](./bashful-opts.inc.sh) | [`bashful`](./docs/api/bashful.md) | None
+[`path`](./docs/api/path.md) | [`bashful-path.inc.sh`](./bashful-path.inc.sh) | None | None
+[`sanitize`](./docs/api/sanitize.md) | [`bashful-sanitize.inc.sh`](./bashful-sanitize.inc.sh) | None | None
+[`seq`](./docs/api/seq.md) | [`bashful-seq.inc.sh`](./bashful-seq.inc.sh) | [`list`](./docs/api/list.md) | [`ssh-spec`](./docs/api/ssh-spec.md)
+[`ssh-spec`](./docs/api/ssh-spec.md) | [`bashful-ssh-spec.inc.sh`](./bashful-ssh-spec.inc.sh) | [`list`](./docs/api/list.md), [`match`](./docs/api/match.md), [`seq`](./docs/api/seq.md) | None
+[`text`](./docs/api/text.md) | [`bashful-text.inc.sh`](./bashful-text.inc.sh) | None | [`list`](./docs/api/list.md), [`match`](./docs/api/match.md)
 
 Functionality from version 1.1.2 of `bash-script-lib` has been migrated to this project.
 
