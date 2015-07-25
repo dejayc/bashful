@@ -89,6 +89,11 @@ function isScriptSourced()
     [[ "${BASH_ARGV}" != '' ]]
 }
 
+function isScriptSshCommand()
+{
+    [[ "$(ps -o comm= -p $PPID)" =~ 'sshd' ]]
+}
+
 function isVariableSet()
 {
     local VAR_NAME="${1-}"
