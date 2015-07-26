@@ -760,7 +760,7 @@ USAGE_SYNOPSIS
      By default, Litest aborts the execution of remaining test cases if one
      fails.
 
-  -s reports the results of each test case in a summarized format, supressing
+  -s reports the results of each test case in a summarized format, suppressing
      the test description, executed test command, and superfluous whitespace.
      By default, only passing tests are summarized, and failing tests are
      reported in verbose mode.
@@ -832,7 +832,7 @@ USAGE_SYNOPSIS
   Note that a global array, TEST_SCRIPTS, is provided for test suite authors
   to specify scripts that should be sourced prior to test execution.  This
   array should be populated with the full or relative path of scripts required
-  by the test suite.  If -e was specified, 'set -x' is executed prior to
+  by the test suite.  If -e was specified, 'set -e' is executed prior to
   sourcing the scripts.  Similarly, if -u was specified, 'set -u' is executed.
 USAGE_TEXT
 
