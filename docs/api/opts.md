@@ -64,6 +64,6 @@ If `processScriptOption` does not exist as a function within the calling script,
 It is recommended that `processScriptOption` actually populate an array of the options that were received, rather than acting upon them immediately.  After `prepareScript` successfully returns, the calling script can then validate the array of options, and iterate through them to process them in order.  This provides a few benefits:
 
 * If the script specifies that a certain flag should cause help text to be displayed, it is usually desired that the script should **ONLY** display the help text, and not begin to perform any other script logic.  Since actual logic isn't executed within the function `processScriptOption`, receiving a `help` option could cause the script to display help text and terminate, before any actual logic had the chance of being executed.
-* Validation can be performed upon all of options and option values simultaneously, instead of handling them piecemeal within `processScriptOption`.  This can allow redundant or out-of-order arguments to be handled sensibly.
+* Validation can be performed upon all of options simultaneously, instead of handling them piecemeal within `processScriptOption`.  This can allow redundant or out-of-order arguments to be handled sensibly.
 
 When passing the command line arguments from one function to another, it is recommended to use the notation `"${@:+${@}}"`, which will not generate an error if no command line arguments are specified and `set -u` is defined.
