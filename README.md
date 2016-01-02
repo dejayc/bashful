@@ -123,4 +123,4 @@ Module Name | Script | Requires | Required By
 
 Functionality from version 1.1.2 of `bash-script-lib` has been migrated to this project.
 
-Copyright 2009-2015 Dejay Clayton.  All rights reserved.
+Copyright 2009-2016 Dejay Clayton.  All rights reserved.

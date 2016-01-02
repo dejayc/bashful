@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Bashful is copyright 2009-2015 Dejay Clayton, all rights reserved:
+# Bashful is copyright 2009-2016 Dejay Clayton, all rights reserved:
 #     https://github.com/dejayc/bashful
 # Bashful is licensed under the 2-Clause BSD License:
 #     http://opensource.org/licenses/BSD-2-Clause
