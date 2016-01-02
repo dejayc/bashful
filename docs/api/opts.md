@@ -49,7 +49,7 @@ In the example above: `OPT_COUNT` represents the ordinal offset of the option be
 
 ### Processing Script Options
 
-After `SCRIPT_OP_SPEC` and `processScriptOption` have been defined, the calling script may begin to process the command line options passed to the script, by invoking the function `prepareScript` as follows:
+After `SCRIPT_OPT_SPEC` and `processScriptOption` have been defined, the calling script may begin to process the command line options passed to the script, by invoking the function `prepareScript` as follows:
 
 ```
 prepareScript \

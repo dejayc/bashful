@@ -50,7 +50,7 @@ Variable Name | Purpose
 
 ### Conditionally Loading Modules
 
-It is a best practice to only load a Bashful module if it hasn't already been loaded.  Nonetheless, each Bashful module checks to see if it has already been loaded, and if it has, returns out of the script without re-executing the logic within.
+It is a best practice to only load a Bashful module if it hasn't already been loaded.  Nonetheless, each Bashful module checks to see if it has already been loaded, and if it has, returns out of the module without re-executing the logic within.
 
 To conditionally load [`bashful`](./docs/api/bashful.md), first check to see if the variable [`BASHFUL_VERSION`](#bashful_version) is empty:
 

@@ -514,7 +514,7 @@ permutedSeq ${FLAG_PRESERVE_NULL_VALUES} -s "${SPLIT}" "${VALUE}" \
 # function reads each argument passed to it, and parses them by looking for
 # embedded sequences within them.
 #
-# -d optionally specifies one or more text delimeter characters to separate
+# -d optionally specifies one or more text delimiter characters to separate
 #    values within a text sequence.  Defaults to ','.  An error is returned if
 #    null, or if it contains any character also contained by the starting or
 #    ending delimiters.
@@ -716,7 +716,7 @@ function permutedSeq()
 
             declare -i SEQUENCE_LEN=${#SEQUENCE}
 
-            # Trim the opening delimeter from the current sequence.
+            # Trim the opening delimiter from the current sequence.
             SEQUENCE="${SEQUENCE#["${OPEN_DELIM}"]}"
 
             # Error: No opening delimiter.

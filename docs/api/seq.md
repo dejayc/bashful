@@ -171,7 +171,7 @@ My\ Name=No\ one My\ Name=Doesn\'t\ matter
 **Description**: Returns a separated list of strings representing permutations of static text mingled with non-negative integer sequences or static text sequences.  The function reads each argument passed to it, and parses them by looking for embedded sequences within them.
 
 **Parameters**:
-`-d`: optionally specifies one or more text delimeter characters to separate values within a text sequence.  Defaults to `,`.  An error is returned if null, or if it contains any character also contained by the starting or ending delimiters.
+`-d`: optionally specifies one or more text delimiter characters to separate values within a text sequence.  Defaults to `,`.  An error is returned if null, or if it contains any character also contained by the starting or ending delimiters.
 
 `-m`: optionally specifies one or more characters to serve as delimiters that mark the start of a sequence.  Defaults to `[`.  An error is returned if null, or if it contains `-` or any character also contained by the ending or text delimiters.
 

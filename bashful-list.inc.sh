@@ -146,11 +146,11 @@ function joinedList()
 # -d optionally specifies one or more input delimiter characters.  Defaults to
 #    $IFS.  If null, splits every string into an array of characters.
 #
-# -e optionally protects instances of escaped delimeter characters.  For
-#    example, if delimter ';' is specified, and an instance of ';' must appear
+# -e optionally protects instances of escaped delimiter characters.  For
+#    example, if delimiter ';' is specified, and an instance of ';' must appear
 #    within a list element without being interpreted as a delimiter, that
 #    character may be represented as '\;' without being interpreted as a
-#    delimeter, if '-e' is specified.
+#    delimiter, if '-e' is specified.
 #
 # Examples:
 #
